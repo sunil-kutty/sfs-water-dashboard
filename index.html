@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SFSSD Water Supply Dashboard</title>
+<title>SFSSD Water Supply Dashboard (Secure)</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -352,7 +352,7 @@
     <h1>SFSSD Water Supply Dashboard</h1>
     <p>Daily tanker, rainwater &amp; KWA (1 &amp; 2) supply — 2025 &amp; 2026</p>
     <div class="live-status" id="liveStatus">Loading live data…</div>
-    <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data from Google Sheets">
+    <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data via the Apps Script Web App">
         <span class="spin">⟳</span> <span id="refreshBtnLabel">Refresh</span>
     </button>
 </header>
@@ -457,14 +457,23 @@
 </div>
 
 <footer>
-    Data loads live from the "Water Consumption History" Google Sheet, "Daily Data" tab, filtered to 2025–2026 ·
-    Press Refresh to re-sync · Read-only — no data entry, nothing is written back to the sheet
+    Data loads live via a Google Apps Script Web App proxy (no sheet ID exposed in this page) ·
+    "Daily Data" tab, filtered to 2025–2026 · Press Refresh to re-sync ·
+    Read-only — no data entry, nothing is written back to the sheet ·
+    Powered by Google Apps Script (GAS)
 </footer>
 
 <script>
 // ---------- Config ----------
-const LIVE_SHEET_ID = '1NdCh1QA67VbObQvRKYFnMUafMNn5HNSc8xutslI-XnY';
-const SHEET_NAME = 'Daily Data';
+// Unlike the original dashboard, this version does NOT embed the Google Sheet ID anywhere in
+// this file. All data access goes through a Google Apps Script Web App (see the companion file
+// SFS_Water_Dashboard_Secure_AppsScript.gs) which holds the sheet ID server-side.
+//
+// >>> REQUIRED: replace the placeholder below with your deployed Web App URL <<<
+// Get it from: Extensions > Apps Script (on Sunil's sheet) > Deploy > New deployment > Web app.
+// It looks like: https://script.google.com/macros/s/AKfycb.../exec
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbysfLekap8COYp7irKgfCsCt6MZvyWQQy9-U_YUuZkFjY5-vjoQBFszrAoA0RuVpOh-/exec';
+
 const LIVE_FETCH_TIMEOUT_MS = 8000;
 const YEARS_IN_SCOPE = [2025, 2026];
 const TANKER_LOAD_L = 12000;
@@ -487,74 +496,54 @@ function fmt(n) {
     return (n == null || isNaN(n)) ? '—' : Math.round(n).toLocaleString('en-IN');
 }
 
-// ---------- Live fetch (gviz/tq JSONP — no backend, avoids CORS) ----------
+// ---------- Live fetch (via Apps Script Web App — plain fetch(), no sheet ID in this file) ----------
 function loadLiveSheetData() {
-    return new Promise((resolve, reject) => {
-        const callbackName = 'waterCallback_' + Date.now();
-        const script = document.createElement('script');
-        let settled = false;
+    if (!WEB_APP_URL || WEB_APP_URL.indexOf('PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE') !== -1) {
+        return Promise.reject(new Error('WEB_APP_URL is not set yet — deploy the Apps Script Web App and paste its URL in this file.'));
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), LIVE_FETCH_TIMEOUT_MS);
+    const url = `${WEB_APP_URL}?_=${Date.now()}`;
 
-        const cleanup = () => {
-            delete window[callbackName];
-            if (script.parentNode) script.parentNode.removeChild(script);
-        };
-
-        const timer = setTimeout(() => {
-            if (settled) return;
-            settled = true;
-            cleanup();
-            reject(new Error('Live data fetch timed out'));
-        }, LIVE_FETCH_TIMEOUT_MS);
-
-        window[callbackName] = (resp) => {
-            if (settled) return;
-            settled = true;
+    return fetch(url, { method: 'GET', signal: controller.signal })
+        .then(r => {
             clearTimeout(timer);
-            cleanup();
-            resolve(resp);
-        };
-
-        script.onerror = () => {
-            if (settled) return;
-            settled = true;
+            if (!r.ok) throw new Error('Web App returned HTTP ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            if (data && data.error) throw new Error(data.error);
+            return data;
+        })
+        .catch(err => {
             clearTimeout(timer);
-            cleanup();
-            reject(new Error('Live data script failed to load'));
-        };
-
-        script.src = `https://docs.google.com/spreadsheets/d/${LIVE_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${callbackName}&headers=0&sheet=${encodeURIComponent(SHEET_NAME)}&_=${Date.now()}`;
-        document.body.appendChild(script);
-    });
+            throw err;
+        });
 }
 
 // ---------- Cell parsing helpers ----------
-function cellNum(c) {
-    if (!c || c.v == null || c.v === '') return NaN;
-    if (typeof c.v === 'number') return c.v;
-    const s = String(c.f != null ? c.f : c.v).replace(/,/g, '').trim();
+// Note: the Web App sends each row as a plain array of primitives (not gviz's {v,f} cell
+// objects), and date cells arrive as 'yyyy-MM-dd' strings (converted server-side using the
+// spreadsheet's own timezone — see the .gs file) to avoid timezone-shift bugs.
+function cellNum(v) {
+    if (v == null || v === '') return NaN;
+    if (typeof v === 'number') return v;
+    const s = String(v).replace(/,/g, '').trim();
     if (s === '') return NaN;
     const n = parseFloat(s);
     return isNaN(n) ? NaN : n;
 }
 
-function cellStr(c) {
-    if (!c || c.v == null) return '';
-    return String(c.f != null ? c.f : c.v).trim();
+function cellStr(v) {
+    if (v == null) return '';
+    return String(v).trim();
 }
 
-function parseDateCell(c) {
-    if (!c || c.v == null || c.v === '') return null;
-    const raw = c.v;
-    if (typeof raw === 'string' && raw.indexOf('Date(') === 0) {
-        const m = /Date\((\d+),\s*(\d+),\s*(\d+)\)/.exec(raw);
-        if (m) return new Date(+m[1], +m[2], +m[3]);
-    }
-    const s = String(c.f != null ? c.f : raw).trim();
-    const m2 = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s);
-    if (m2) {
-        const mi = MONTH_NAMES.findIndex(x => x.toLowerCase() === m2[2].toLowerCase());
-        if (mi !== -1) return new Date(+m2[3], mi, +m2[1]);
-    }
+function parseDateCell(v) {
+    if (v == null || v === '') return null;
+    const s = String(v).trim();
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
     const d = new Date(s);
     return isNaN(d.getTime()) ? null : d;
 }
@@ -565,25 +554,25 @@ function parseDateCell(c) {
 // Reading (KL), 6 KWA 2 Meter Reading (KL), 7 Total KWA Water Received (L), 8 Remarks,
 // 9 Leak Report. Rows 0-2 in the raw sheet are stray/legend rows (not real data) — the
 // real header is row index 2 and data starts at row index 3; we skip straight to index 3
-// using fixed column positions rather than trusting gviz's own header auto-detection.
+// using fixed column positions, same as the original dashboard.
 function parseDailyData(resp) {
-    if (!resp || !resp.table || !Array.isArray(resp.table.rows)) {
+    if (!resp || !Array.isArray(resp.rows)) {
         throw new Error('Unexpected Daily Data response shape');
     }
-    const rows = resp.table.rows;
+    const rows = resp.rows;
     const records = [];
     const anomalies = { tankerActuals: 0, kwaTotal: 0, poolWater: 0, rainwaterRawFormat: 0 };
 
     for (let i = 3; i < rows.length; i++) {
         const r = rows[i];
-        if (!r || !r.c) continue;
-        const c = (idx) => r.c[idx];
+        if (!r) continue;
+        const c = (idx) => r[idx];
 
         const date = parseDateCell(c(0));
         if (!date) continue; // blank template row — not a real day
 
         const tankersCell = c(1);
-        const tankersCellBlank = !tankersCell || tankersCell.v == null || tankersCell.v === '';
+        const tankersCellBlank = tankersCell == null || tankersCell === '';
         if (tankersCellBlank) continue; // not yet logged — Date auto-fills via sheet formula even on un-entered future rows
 
         const tankersRaw = cellNum(c(1));
@@ -934,7 +923,7 @@ function renderMonthInsight(y, m, agg, days) {
             ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
         </div>
         ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — see Daily Log tab.</div>` : ''}
-        <div class="chart-footer-note">Source: this tool's live "Daily Data" Google Sheet — figures recomputed live from the same dataset shown in the Daily Log tab.</div>`;
+        <div class="chart-footer-note">Source: live data via the Apps Script Web App proxy — figures recomputed live from the same dataset shown in the Daily Log tab.</div>`;
 }
 
 function renderMonthChart() {
