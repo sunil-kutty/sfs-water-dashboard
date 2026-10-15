@@ -350,7 +350,7 @@
 
 <header>
     <h1>SFSSD Water Supply Dashboard</h1>
-    <p>Daily tanker, rainwater &amp; KWA (1 &amp; 2) supply — 2025 &amp; 2026</p>
+    <p>Daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025–2026</p>
     <div class="live-status" id="liveStatus">Loading live data…</div>
     <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data from Google Sheets">
         <span class="spin">⟳</span> <span id="refreshBtnLabel">Refresh</span>
@@ -1004,7 +1004,7 @@ function refreshLiveData() {
             RECORDS = records.filter(r => YEARS_IN_SCOPE.includes(r.date.getFullYear()));
             refreshUI();
             const stamp = new Date().toLocaleString();
-            setLiveStatus(`🔵 Live data as of ${stamp} (${RECORDS.length} days total loaded, 2025–2026)`, 'live');
+            setLiveStatus(`💧 Live data as of ${stamp} (${RECORDS.length} days total loaded, 2025–2026)`, 'live');
         })
         .catch(err => {
             console.warn('Water supply sheet fetch failed.', err);
