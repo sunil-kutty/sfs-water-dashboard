@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFSSD Water Supply Dashboard</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: #f1f4f9;
+        color: #1f2937;
+        padding-bottom: 40px;
+    }
+    header {
+        background: linear-gradient(135deg, #1e3a8a, #2563eb 60%, #3b82f6);
+        color: #fff;
+        padding: 28px 20px 22px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+    header h1 { font-size: 1.6rem; letter-spacing: 0.3px; }
+    header p { margin-top: 6px; font-size: 0.85rem; opacity: 0.9; }
+    .live-status {
+        margin-top: 10px;
+        display: inline-block;
+        font-size: 0.72rem;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.15);
+        letter-spacing: 0.2px;
+    }
+    .live-status.live { background: rgba(255,255,255,0.95); color: #1e3a8a; font-weight: 600; }
+    .live-status.offline { background: rgba(255,255,255,0.95); color: #b91c1c; font-weight: 600; }
+    .refresh-btn {
+        margin-top: 10px;
+        margin-left: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.72rem;
+        padding: 4px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.4);
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+        cursor: pointer;
+        letter-spacing: 0.2px;
+        transition: background 0.15s ease;
+    }
+    .refresh-btn:hover:not(:disabled) { background: rgba(255,255,255,0.25); }
+    .refresh-btn:disabled { opacity: 0.6; cursor: default; }
+    .refresh-btn .spin { display: inline-block; }
+    .refresh-btn.spinning .spin { animation: spin 0.8s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 14px;
+        max-width: 760px;
+        margin: 18px auto 0;
+    }
+    .stat-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 10px 18px;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .stat-card .num { font-size: 1.25rem; font-weight: 700; color: #2563eb; }
+    .stat-card .label { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
+    .stat-card.anomaly .num { color: #b45309; }
+    .stat-card.anomaly {
+        cursor: pointer;
+        transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .stat-card.anomaly:hover {
+        box-shadow: 0 2px 10px rgba(180,83,9,0.25);
+        transform: translateY(-1px);
+    }
+    .stat-card.anomaly .tap-hint {
+        font-size: 0.65rem;
+        color: #b45309;
+        font-weight: 600;
+        margin-top: 4px;
+        opacity: 0.85;
+    }
+
+    .scope-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 18px auto 0;
+        flex-wrap: wrap;
+    }
+    .scope-label { font-size: 0.8rem; color: #4b5563; font-weight: 600; }
+    .year-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+    .year-btn {
+        padding: 6px 16px;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #374151;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .year-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    .tabs {
+        display: flex;
+        gap: 8px;
+        margin: 22px auto 0;
+        justify-content: center;
+    }
+    .tab-btn {
+        padding: 9px 18px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        color: #374151;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .cal-icon {
+        display: inline-flex;
+        flex-direction: column;
+        width: 15px;
+        height: 15px;
+        border-radius: 3px;
+        overflow: hidden;
+        border: 1.3px solid currentColor;
+        vertical-align: -3px;
+        margin-right: 3px;
+    }
+    .cal-icon-top { height: 4px; background: currentColor; }
+    .cal-icon-num {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8.5px;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .controls {
+        margin: 20px auto 10px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    #searchBox {
+        flex: 1;
+        min-width: 220px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        font-size: 0.95rem;
+        background: #fff;
+    }
+    #searchBox:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+    select {
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        background: #fff;
+        font-size: 0.9rem;
+    }
+    label.chk {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: #4b5563;
+        background: #fff;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        cursor: pointer;
+    }
+
+    #resultCount {
+        margin: 0 auto 10px;
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .legend {
+        margin: 0 auto 14px;
+        font-size: 0.72rem;
+        color: #6b7280;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 4px; }
+
+    .table-scroll {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 65vh;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 880px; }
+    thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        text-align: left;
+        padding: 10px 12px;
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 2px solid #e5e7eb;
+        white-space: nowrap;
+    }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; white-space: nowrap; }
+    tbody td.notes { white-space: normal; min-width: 220px; max-width: 320px; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr.anomaly-row { background: #fffbeb; }
+
+    .badge {
+        display: inline-block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+    .badge.tanker { background: #ffedd5; color: #b45309; }
+    .badge.rain { background: #d1fae5; color: #047857; }
+    .badge.kwa { background: #dbeafe; color: #1d4ed8; }
+    .badge.warn { background: #fee2e2; color: #b91c1c; cursor: help; }
+    .badge.info { background: #e5e7eb; color: #4b5563; cursor: help; }
+    .leak-tag { color: #b91c1c; font-weight: 600; }
+    .remark-tag { color: #6b7280; }
+
+    #noResults {
+        text-align: center;
+        color: #9ca3af;
+        padding: 40px 20px;
+        font-size: 0.9rem;
+        display: none;
+    }
+
+    .compare-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); padding: 20px; margin-top: 10px; }
+    .compare-pick { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .partial-badge { display:inline-block; margin-top:4px; font-size:0.65rem; background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:7px; }
+    .no-data-note { font-size: 0.78rem; color: #9ca3af; font-style: italic; padding: 20px 0; text-align: center; }
+
+    .chart-title { font-size: 1.05rem; font-weight: 700; color: #111827; }
+    .chart-sub { font-size: 0.78rem; color: #6b7280; margin-top: 2px; margin-bottom: 14px; }
+    .chart-legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 0.78rem; color: #374151; }
+    .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+    .sw.tanker { background: #9333ea; }
+    .sw.rain { background: #10b981; }
+    .sw.kwa { background: #3b82f6; }
+    .chart-svg-wrap { width: 100%; overflow-x: auto; }
+    .insight-box {
+        margin-top: 16px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.82rem;
+        color: #1e3a8a;
+        line-height: 1.5;
+    }
+    .insight-box strong { color: #1e3a8a; }
+    .chart-footer-note { font-size: 0.68rem; color: #9ca3af; margin-top: 8px; }
+
+    .note-box {
+        margin: 16px auto 0;
+        font-size: 0.75rem;
+        color: #92400e;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 10px 14px;
+    }
+    .flag-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        z-index: 50;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    .flag-modal-overlay.open { display: flex; }
+    .flag-modal {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 14px;
+        max-width: 480px;
+        width: 100%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 18px 20px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        color: #92400e;
+        font-size: 0.85rem;
+        position: relative;
+    }
+    .flag-modal-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        line-height: 1;
+        color: #92400e;
+        cursor: pointer;
+        padding: 6px 8px;
+    }
+    .flag-modal-close:hover { opacity: 0.6; }
+    .flag-modal > strong { display: block; margin: 0 28px 10px 0; font-size: 0.95rem; }
+    .flag-modal ul { margin: 0; padding-left: 20px; }
+    .flag-modal li { margin-bottom: 8px; }
+    .flag-modal .more-note { font-style: italic; opacity: 0.85; margin-top: 8px; }
+
+    footer {
+        text-align: center;
+        font-size: 0.72rem;
+        color: #9ca3af;
+        margin-top: 30px;
+        padding: 0 20px;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>SFSSD Water Supply Dashboard</h1>
+    <p>Daily tanker, rainwater &amp; KWA (1 &amp; 2) supply — 2025 &amp; 2026</p>
+    <div class="live-status" id="liveStatus">Loading live data…</div>
+    <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data from Google Sheets">
+        <span class="spin">⟳</span> <span id="refreshBtnLabel">Refresh</span>
+    </button>
+</header>
+
+<div class="wrap">
+
+    <div class="scope-row">
+        <span class="scope-label">Showing data for:</span>
+        <div class="year-tabs" id="yearTabs"></div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card"><div class="num" id="statDays">0</div><div class="label">Days Logged</div></div>
+        <div class="stat-card"><div class="num" id="statTanker">0</div><div class="label">Tanker Loads (Total)</div></div>
+        <div class="stat-card"><div class="num" id="statRain">0</div><div class="label">Rainwater (L)</div></div>
+        <div class="stat-card"><div class="num" id="statKwa">0</div><div class="label">KWA Water (L)</div></div>
+        <div class="stat-card anomaly" title="Rows with an excluded formula-glitch value (Tanker Actuals or negative KWA), a pool-water mislog, or a raw-litre rainwater unit note — not all of these show a red ⚠ in the log, see caveats below"><div class="num" id="statAnomaly">0</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="log"><span class="cal-icon"><span class="cal-icon-top"></span><span class="cal-icon-num" id="calIconNum"></span></span> Daily Log</button>
+        <button class="tab-btn" data-tab="compare">📊 Monthly Chart</button>
+    </div>
+
+    <!-- ===== Daily Log panel ===== -->
+    <div class="panel active" id="panel-log">
+        <div class="controls">
+            <input type="text" id="searchBox" placeholder="Search date, remarks or leak report...">
+            <select id="monthSelect">
+                <option value="ALL">All Months</option>
+            </select>
+            <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
+        </div>
+
+        <div id="resultCount"></div>
+
+        <div class="legend">
+            <span>Tanker (nominal = loads × 12,000 L)</span>
+            <span>Rainwater received that day (L)</span>
+            <span>KWA 1 / KWA 2 — cumulative meter reading (KL)</span>
+            <span><span class="badge warn">⚠</span> Source-sheet anomaly — excluded from totals &amp; comparisons</span>
+        </div>
+
+        <div class="flag-modal-overlay" id="flagModalOverlay">
+            <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true">
+                <button class="flag-modal-close" id="flagModalClose" aria-label="Close">&times;</button>
+                <div id="flagModalBody"></div>
+            </div>
+        </div>
+
+        <div class="table-scroll">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Tankers</th>
+                        <th>Tanker Water<br>(Nominal, L)</th>
+                        <th>Rainwater<br>(L)</th>
+                        <th>KWA 1<br>(Meter, KL)</th>
+                        <th>KWA 2<br>(Meter, KL)</th>
+                        <th>KWA Water<br>Received (L)</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="logBody"></tbody>
+            </table>
+        </div>
+        <div id="noResults">No matching day found.</div>
+    </div>
+
+    <!-- ===== Monthly Chart panel ===== -->
+    <div class="panel" id="panel-compare">
+        <div class="compare-wrap">
+            <div class="compare-pick">
+                <label for="monthPicker" style="font-size:0.85rem;color:#374151;font-weight:600;">Select month:</label>
+                <select id="monthPicker"></select>
+            </div>
+            <div id="monthChartCard"></div>
+        </div>
+        <div class="note-box">
+            Built only from this tool's 2025–2026 dataset. Tanker figures use nominal volume (loads × 12,000 L) —
+            the source sheet's own "Actuals" column has a recurring meter-formula glitch and isn't summed.
+            Rainwater and KWA figures exclude flagged/anomalous days (see Daily Log tab); the excluded-day count,
+            if any, is shown below the chart.
+        </div>
+    </div>
+
+    <div class="note-box">
+        <strong>Known data caveats in the source sheet (flagged, not hidden):</strong>
+        (1) "Tanker Water Actuals" shows broken placeholder values (huge negative/positive numbers) on days
+        adjacent to a missing meter reading — this column is never summed into totals here (nominal tanker
+        volume = loads × 12,000 L is used instead); affected rows are shown with ⚠ in the log.
+        (2) The "Rainwater" column switched units partway through — most of 2025–2026 is a small count of
+        12,000 L equivalents, but entries from early Sep 2026 onward use raw litres directly; this tool
+        auto-detects which (≤10 ⇒ equivalents, &gt;10 ⇒ already litres) and flags the raw-litre rows.
+        (3) A few days have "pool water" logged in the Rainwater column by mistake (per the sheet's own
+        remarks) — excluded from rainwater totals here. (4) KWA 1 / KWA 2 are shown as raw cumulative
+        meter readings (KL) exactly as recorded — this tool does not attempt to split the daily "KWA Water
+        Received" total back into a per-index (KWA1 vs KWA2) share.
+    </div>
+
+</div>
+
+<footer>
+    Data loads live from the "Water Consumption History" Google Sheet, "Daily Data" tab, filtered to 2025–2026 ·
+    Press Refresh to re-sync · Read-only — no data entry, nothing is written back to the sheet
+</footer>
+
+<script>
+// ---------- Config ----------
+const LIVE_SHEET_ID = '1NdCh1QA67VbObQvRKYFnMUafMNn5HNSc8xutslI-XnY';
+const SHEET_NAME = 'Daily Data';
+const LIVE_FETCH_TIMEOUT_MS = 8000;
+const YEARS_IN_SCOPE = [2025, 2026];
+const TANKER_LOAD_L = 12000;
+const ACTUALS_ANOMALY_ABS_L = 150000; // anything beyond this (or negative) is a known formula artifact, not real volume
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+let RECORDS = []; // built fresh from the live sheet on every load/refresh — never hardcoded
+let currentYear = null; // 'ALL' or a year string, e.g. '2026' — set on first load to the most recent year present
+
+function escapeHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function fmt(n) {
+    return (n == null || isNaN(n)) ? '—' : Math.round(n).toLocaleString('en-IN');
+}
+
+// ---------- Live fetch (gviz/tq JSONP — no backend, avoids CORS) ----------
+function loadLiveSheetData() {
+    return new Promise((resolve, reject) => {
+        const callbackName = 'waterCallback_' + Date.now();
+        const script = document.createElement('script');
+        let settled = false;
+
+        const cleanup = () => {
+            delete window[callbackName];
+            if (script.parentNode) script.parentNode.removeChild(script);
+        };
+
+        const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            reject(new Error('Live data fetch timed out'));
+        }, LIVE_FETCH_TIMEOUT_MS);
+
+        window[callbackName] = (resp) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            cleanup();
+            resolve(resp);
+        };
+
+        script.onerror = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            cleanup();
+            reject(new Error('Live data script failed to load'));
+        };
+
+        script.src = `https://docs.google.com/spreadsheets/d/${LIVE_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${callbackName}&headers=0&sheet=${encodeURIComponent(SHEET_NAME)}&_=${Date.now()}`;
+        document.body.appendChild(script);
+    });
+}
+
+// ---------- Cell parsing helpers ----------
+function cellNum(c) {
+    if (!c || c.v == null || c.v === '') return NaN;
+    if (typeof c.v === 'number') return c.v;
+    const s = String(c.f != null ? c.f : c.v).replace(/,/g, '').trim();
+    if (s === '') return NaN;
+    const n = parseFloat(s);
+    return isNaN(n) ? NaN : n;
+}
+
+function cellStr(c) {
+    if (!c || c.v == null) return '';
+    return String(c.f != null ? c.f : c.v).trim();
+}
+
+function parseDateCell(c) {
+    if (!c || c.v == null || c.v === '') return null;
+    const raw = c.v;
+    if (typeof raw === 'string' && raw.indexOf('Date(') === 0) {
+        const m = /Date\((\d+),\s*(\d+),\s*(\d+)\)/.exec(raw);
+        if (m) return new Date(+m[1], +m[2], +m[3]);
+    }
+    const s = String(c.f != null ? c.f : raw).trim();
+    const m2 = /^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec(s);
+    if (m2) {
+        const mi = MONTH_NAMES.findIndex(x => x.toLowerCase() === m2[2].toLowerCase());
+        if (mi !== -1) return new Date(+m2[3], mi, +m2[1]);
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+// ---------- Parse the Daily Data tab ----------
+// Source columns (fixed position, 0-indexed): 0 Date, 1 No. of Tankers, 2 Tanker Water
+// Meter Reading, 3 Tanker Water Actuals, 4 Rainwater (12,000 L Equiv.), 5 KWA 1 Meter
+// Reading (KL), 6 KWA 2 Meter Reading (KL), 7 Total KWA Water Received (L), 8 Remarks,
+// 9 Leak Report. Rows 0-2 in the raw sheet are stray/legend rows (not real data) — the
+// real header is row index 2 and data starts at row index 3; we skip straight to index 3
+// using fixed column positions rather than trusting gviz's own header auto-detection.
+function parseDailyData(resp) {
+    if (!resp || !resp.table || !Array.isArray(resp.table.rows)) {
+        throw new Error('Unexpected Daily Data response shape');
+    }
+    const rows = resp.table.rows;
+    const records = [];
+    const anomalies = { tankerActuals: 0, kwaTotal: 0, poolWater: 0, rainwaterRawFormat: 0 };
+
+    for (let i = 3; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || !r.c) continue;
+        const c = (idx) => r.c[idx];
+
+        const date = parseDateCell(c(0));
+        if (!date) continue; // blank template row — not a real day
+
+        const tankersCell = c(1);
+        const tankersCellBlank = !tankersCell || tankersCell.v == null || tankersCell.v === '';
+        if (tankersCellBlank) continue; // not yet logged — Date auto-fills via sheet formula even on un-entered future rows
+
+        const tankersRaw = cellNum(c(1));
+        const tankers = isNaN(tankersRaw) ? 0 : tankersRaw;
+        const nominalTankerL = tankers * TANKER_LOAD_L;
+
+        const actualsRaw = cellNum(c(3));
+        let actualsL = isNaN(actualsRaw) ? null : actualsRaw;
+        let actualsFlag = false;
+        if (actualsL != null && (actualsL < 0 || actualsL > ACTUALS_ANOMALY_ABS_L)) {
+            actualsFlag = true;
+            anomalies.tankerActuals++;
+        }
+
+        const remarks = cellStr(c(8));
+        const leak = cellStr(c(9));
+        const isPoolWater = /pool water/i.test(remarks);
+        if (isPoolWater) anomalies.poolWater++;
+
+        const rainwaterRaw = cellNum(c(4));
+        let rainwaterL = 0, rainwaterUnitRaw = false;
+        if (!isNaN(rainwaterRaw) && rainwaterRaw > 0) {
+            if (rainwaterRaw <= 10) {
+                rainwaterL = rainwaterRaw * TANKER_LOAD_L;
+            } else {
+                rainwaterL = rainwaterRaw;
+                rainwaterUnitRaw = true;
+                anomalies.rainwaterRawFormat++;
+            }
+        }
+
+        const kwa1 = cellNum(c(5));
+        const kwa2 = cellNum(c(6));
+        const kwaTotalRaw = cellNum(c(7));
+        let kwaTotalL = isNaN(kwaTotalRaw) ? null : kwaTotalRaw;
+        let kwaFlag = false;
+        if (kwaTotalL != null && kwaTotalL < 0) {
+            kwaFlag = true;
+            anomalies.kwaTotal++;
+        }
+
+        records.push({
+            date, tankers, nominalTankerL,
+            actualsL, actualsFlag,
+            rainwaterRaw: isNaN(rainwaterRaw) ? 0 : rainwaterRaw, rainwaterL, rainwaterUnitRaw,
+            isPoolWater,
+            kwa1: isNaN(kwa1) ? null : kwa1, kwa2: isNaN(kwa2) ? null : kwa2,
+            kwaTotalL, kwaFlag,
+            remarks, leak
+        });
+    }
+    return { records, anomalies };
+}
+
+// ---------- Rendering: Daily Log ----------
+function monthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+
+function renderStats(records) {
+    let days = records.length;
+    let tankerLoads = 0, rainL = 0, kwaL = 0, anomalyCount = 0;
+    records.forEach(r => {
+        tankerLoads += r.tankers;
+        if (!r.isPoolWater) rainL += r.rainwaterL;
+        if (!r.kwaFlag && r.kwaTotalL != null) kwaL += r.kwaTotalL;
+        if (r.actualsFlag || r.kwaFlag || r.isPoolWater || r.rainwaterUnitRaw) anomalyCount++;
+    });
+    document.getElementById('statDays').textContent = days;
+    document.getElementById('statTanker').textContent = fmt(tankerLoads);
+    document.getElementById('statRain').textContent = fmt(rainL);
+    document.getElementById('statKwa').textContent = fmt(kwaL);
+    document.getElementById('statAnomaly').textContent = anomalyCount;
+}
+
+function describeFlag(r) {
+    const parts = [];
+    if (r.actualsFlag) parts.push(`tanker meter reading was broken/missing — the total uses the estimate instead (${r.tankers} ${r.tankers === 1 ? 'load' : 'loads'} × 12,000 L), not the raw meter number`);
+    if (r.kwaFlag) parts.push('KWA meter reading came out negative (likely a meter reset or entry error) — left out of the KWA total');
+    if (r.isPoolWater) parts.push('this day\'s "Rainwater" entry was actually pool water, not rain — left out of the rainwater total');
+    if (r.rainwaterUnitRaw) parts.push('rainwater was logged in plain litres instead of the usual tanker-load-equivalent unit — still counted in the total, just a units note');
+    return parts.join('; ');
+}
+
+let lastFilteredRecords = [];
+
+function renderFlagSummary(records) {
+    // Just remembers the current filtered set so the modal (opened on click)
+    // always reflects whatever filter is active — it does not render anything itself.
+    lastFilteredRecords = records;
+}
+
+function buildFlagModalHtml(records) {
+    const flagged = records.filter(r => r.actualsFlag || r.kwaFlag || r.isPoolWater || r.rainwaterUnitRaw);
+    if (flagged.length === 0) {
+        return `<strong>No flagged entries in this view</strong><div style="margin-top:4px;">Nothing to call out for the current filter — try widening the month/year/search to see flagged days.</div>`;
+    }
+    const CAP = 8;
+    const sorted = flagged.slice().sort((a, b) => b.date - a.date);
+    const shown = sorted.slice(0, CAP);
+    const items = shown.map(r => {
+        const dateStr = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        return `<li><strong>${dateStr}:</strong> ${describeFlag(r)}</li>`;
+    }).join('');
+    const moreNote = flagged.length > CAP ? `<div class="more-note">+${flagged.length - CAP} more flagged — narrow by month to see details</div>` : '';
+    return `<strong>${flagged.length} flagged ${flagged.length === 1 ? 'entry' : 'entries'} in this view — what it means:</strong><ul>${items}</ul>${moreNote}`;
+}
+
+function openFlagModal() {
+    document.getElementById('flagModalBody').innerHTML = buildFlagModalHtml(lastFilteredRecords);
+    document.getElementById('flagModalOverlay').classList.add('open');
+}
+
+function closeFlagModal() {
+    document.getElementById('flagModalOverlay').classList.remove('open');
+}
+
+
+function noteCell(r) {
+    const parts = [];
+    if (r.leak) parts.push(`<span class="leak-tag">⚠ ${escapeHtml(r.leak)}</span>`);
+    if (r.remarks) parts.push(`<span class="remark-tag">${escapeHtml(r.remarks)}</span>`);
+    if (r.isPoolWater) parts.push(`<span class="badge warn" title="Logged in the Rainwater column by mistake per the sheet's own remark — excluded from rainwater totals">Pool water — excluded</span>`);
+    if (r.rainwaterUnitRaw) parts.push(`<span class="badge info" title="This row's Rainwater value is already in litres (source format switched from equivalents partway through 2026)">raw-L format</span>`);
+    return parts.join('<br>') || '<span style="color:#d1d5db;">—</span>';
+}
+
+function renderRow(r) {
+    const dateStr = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const rowAnomaly = r.actualsFlag || r.kwaFlag || r.isPoolWater;
+    const tankerCell = r.actualsFlag
+        ? `${fmt(r.nominalTankerL)} <span class="badge warn" title="Source 'Tanker Water Actuals' for this day is a meter-formula artifact (${fmt(r.actualsL)} L) — nominal (loads × 12,000 L) shown instead and used in totals">⚠</span>`
+        : fmt(r.nominalTankerL);
+    const kwaCell = r.kwaFlag
+        ? `${fmt(r.kwaTotalL)} <span class="badge warn" title="Negative value — source meter-formula artifact, excluded from totals">⚠</span>`
+        : fmt(r.kwaTotalL);
+    return `
+        <tr class="${rowAnomaly ? 'anomaly-row' : ''}">
+            <td>${dateStr}</td>
+            <td>${r.tankers}</td>
+            <td>${tankerCell}</td>
+            <td>${fmt(r.rainwaterL)}</td>
+            <td>${r.kwa1 != null ? r.kwa1.toLocaleString('en-IN') : '—'}</td>
+            <td>${r.kwa2 != null ? r.kwa2.toLocaleString('en-IN') : '—'}</td>
+            <td>${kwaCell}</td>
+            <td class="notes">${noteCell(r)}</td>
+        </tr>`;
+}
+
+function renderLogTable(records) {
+    document.getElementById('logBody').innerHTML = records
+        .slice()
+        .sort((a, b) => b.date - a.date)
+        .map(renderRow).join('');
+}
+
+function populateMonthSelect() {
+    const sel = document.getElementById('monthSelect');
+    sel.innerHTML = '<option value="ALL">All Months</option>';
+    MONTH_NAMES.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i + 1).padStart(2, '0');
+        opt.textContent = m;
+        sel.appendChild(opt);
+    });
+}
+
+function populateYearTabs() {
+    const years = [...new Set(RECORDS.map(r => r.date.getFullYear()))].sort((a, b) => b - a);
+    if (currentYear === null) currentYear = years.length ? String(years[0]) : 'ALL'; // default: most recent year present
+    const container = document.getElementById('yearTabs');
+    const yearButtons = years.map(y =>
+        `<button class="year-btn${String(y) === currentYear ? ' active' : ''}" data-year="${y}">${y}</button>`
+    ).join('');
+    const allButton = `<button class="year-btn${currentYear === 'ALL' ? ' active' : ''}" data-year="ALL">All years</button>`;
+    container.innerHTML = yearButtons + allButton;
+    container.querySelectorAll('.year-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (currentYear === btn.dataset.year) return;
+            currentYear = btn.dataset.year;
+            populateYearTabs();
+            applyFilters();
+        });
+    });
+}
+
+function getFilteredRecords(base) {
+    const q = document.getElementById('searchBox').value.trim().toLowerCase();
+    const month = document.getElementById('monthSelect').value;
+    const anomalyOnly = document.getElementById('anomalyOnly').checked;
+    return base.filter(r => {
+        if (month !== 'ALL' && String(r.date.getMonth() + 1).padStart(2, '0') !== month) return false;
+        const isAnomaly = r.actualsFlag || r.kwaFlag || r.isPoolWater || r.rainwaterUnitRaw;
+        if (anomalyOnly && !isAnomaly) return false;
+        if (q) {
+            const dateStr = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toLowerCase();
+            const hay = (dateStr + ' ' + r.remarks + ' ' + r.leak).toLowerCase();
+            if (!hay.includes(q)) return false;
+        }
+        return true;
+    });
+}
+
+function applyFilters() {
+    const yearScoped = currentYear === 'ALL' ? RECORDS : RECORDS.filter(r => r.date.getFullYear() === Number(currentYear));
+    const filtered = getFilteredRecords(yearScoped);
+    renderLogTable(filtered);
+    renderStats(filtered);
+    renderFlagSummary(filtered);
+    document.getElementById('resultCount').textContent =
+        filtered.length === yearScoped.length ? `Showing all ${yearScoped.length} days` : `Showing ${filtered.length} of ${yearScoped.length} days`;
+    document.getElementById('noResults').style.display = filtered.length === 0 ? 'block' : 'none';
+}
+
+// ---------- Month comparison ----------
+function aggregateMonth(year, month) { // month: 1-12
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const recs = RECORDS.filter(r => r.date.getFullYear() === year && r.date.getMonth() + 1 === month);
+    if (recs.length === 0) return null;
+
+    let tankerLoads = 0, nominalTankerL = 0, rainL = 0, kwaL = 0;
+    let rainExcluded = 0, kwaExcluded = 0;
+    recs.forEach(r => {
+        tankerLoads += r.tankers;
+        nominalTankerL += r.nominalTankerL;
+        if (r.isPoolWater) rainExcluded++; else rainL += r.rainwaterL;
+        if (r.kwaFlag) kwaExcluded++; else if (r.kwaTotalL != null) kwaL += r.kwaTotalL;
+    });
+
+    return {
+        year, month, daysLogged: recs.length, daysInMonth,
+        isPartial: recs.length < daysInMonth,
+        tankerLoads, nominalTankerL, rainL, kwaL, rainExcluded, kwaExcluded
+    };
+}
+
+function monthLabel(year, month) { return MONTH_NAMES[month - 1] + ' ' + year; }
+
+function populateMonthPicker() {
+    const keys = [...new Set(RECORDS.map(r => monthKey(r.date)))].sort();
+    const sel = document.getElementById('monthPicker');
+    sel.innerHTML = '';
+    keys.forEach(k => {
+        const [y, m] = k.split('-').map(Number);
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = monthLabel(y, m);
+        sel.appendChild(opt);
+    });
+    if (keys.length) sel.value = keys[keys.length - 1];
+}
+
+// Per-day breakdown for one calendar month, for the stacked bar chart.
+// Mirrors aggregateMonth's exclusion rules (pool-water days drop rainwater, flagged days drop KWA)
+// so the chart and the month-level totals it's captioned with always agree.
+function buildDailySeries(year, month) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const byDay = new Map();
+    RECORDS.forEach(r => {
+        if (r.date.getFullYear() === year && r.date.getMonth() + 1 === month) byDay.set(r.date.getDate(), r);
+    });
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+        const r = byDay.get(d);
+        const tankerL = r ? r.nominalTankerL : 0;
+        const rainL = r && !r.isPoolWater ? r.rainwaterL : 0;
+        const kwaL = r && !r.kwaFlag && r.kwaTotalL != null ? r.kwaTotalL : 0;
+        days.push({ day: d, logged: !!r, tankerL, rainL, kwaL, total: tankerL + rainL + kwaL });
+    }
+    return days;
+}
+
+// Rounds up to a "nice" axis ceiling (1/2/5/10 × a power of ten) so gridline labels are round numbers.
+function niceAxisMax(v) {
+    if (v <= 0) return 1;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(v)));
+    const normalized = v / magnitude;
+    const niceNormalized = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+    return niceNormalized * magnitude;
+}
+
+function buildMonthChartSvg(days) {
+    const W = 900, H = 380;
+    const marginL = 58, marginR = 16, marginT = 28, marginB = 36;
+    const plotW = W - marginL - marginR;
+    const plotH = H - marginT - marginB;
+    const n = days.length;
+    const maxTotal = Math.max(1, ...days.map(d => d.total));
+    const niceMax = niceAxisMax(maxTotal * 1.2); // extra headroom so the total-KL label above the tallest bar doesn't clip
+
+    const steps = 4;
+    let gridlines = '';
+    for (let i = 0; i <= steps; i++) {
+        const val = niceMax / steps * i;
+        const y = marginT + plotH - (val / niceMax * plotH);
+        gridlines += `<line x1="${marginL}" y1="${y}" x2="${W - marginR}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+        gridlines += `<text x="${marginL - 8}" y="${y + 3}" font-size="10" fill="#9ca3af" text-anchor="end">${fmt(Math.round(val))}</text>`;
+    }
+
+    const slotW = plotW / n;
+    const barW = Math.max(2, slotW - 4);
+    const labelStride = n > 20 ? 2 : 1;
+    let bars = '';
+    days.forEach((d, i) => {
+        const x = marginL + i * slotW + (slotW - barW) / 2;
+        let yCursor = marginT + plotH;
+        [
+            { v: d.tankerL, color: '#9333ea', label: 'Tanker' },
+            { v: d.kwaL, color: '#3b82f6', label: 'KWA' },
+            { v: d.rainL, color: '#10b981', label: 'Rainwater' }
+        ].forEach(seg => {
+            if (seg.v <= 0) return;
+            const h = (seg.v / niceMax) * plotH;
+            yCursor -= h;
+            bars += `<rect x="${x.toFixed(1)}" y="${yCursor.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${seg.color}"><title>Day ${d.day} — ${seg.label}: ${fmt(seg.v)} L</title></rect>`;
+        });
+        if (d.total > 0) {
+            const kl = d.total / 1000;
+            const klLabel = (kl >= 10 ? Math.round(kl) : kl.toFixed(1)) + ' KL';
+            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(yCursor - 4).toFixed(1)}" font-size="8.5" fill="#374151" text-anchor="middle">${klLabel}</text>`;
+        }
+        if (d.day === 1 || d.day === n || d.day % labelStride === 0) {
+            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(marginT + plotH + 14).toFixed(1)}" font-size="9" fill="#6b7280" text-anchor="middle">${d.day}</text>`;
+        }
+    });
+
+    return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" style="min-width:600px;width:100%;height:auto;">
+        ${gridlines}
+        ${bars}
+        <line x1="${marginL}" y1="${marginT + plotH}" x2="${W - marginR}" y2="${marginT + plotH}" stroke="#9ca3af" stroke-width="1"/>
+    </svg></div>`;
+}
+
+function renderMonthInsight(y, m, agg, days) {
+    const total = agg.nominalTankerL + agg.rainL + agg.kwaL;
+    const pct = v => total > 0 ? (v / total * 100) : 0;
+    const peak = days.reduce((best, d) => (!best || d.total > best.total) ? d : best, null);
+
+    const excludedNotes = [];
+    if (agg.rainExcluded) excludedNotes.push(`${agg.rainExcluded} day(s) rainwater excluded (pool-water remark)`);
+    if (agg.kwaExcluded) excludedNotes.push(`${agg.kwaExcluded} day(s) KWA excluded (negative-meter anomaly)`);
+
+    return `
+        <div class="insight-box">
+            ★ <strong>${monthLabel(y, m)}:</strong> ${fmt(total)} L total across ${agg.daysLogged}/${agg.daysInMonth} logged days
+            ${agg.isPartial ? '<span class="partial-badge">Partial month</span>' : ''}
+            — Tanker ${pct(agg.nominalTankerL).toFixed(0)}% (${fmt(agg.nominalTankerL)} L, ${agg.tankerLoads} loads),
+            KWA ${pct(agg.kwaL).toFixed(0)}% (${fmt(agg.kwaL)} L),
+            Rainwater ${pct(agg.rainL).toFixed(0)}% (${fmt(agg.rainL)} L).
+            ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
+        </div>
+        ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — see Daily Log tab.</div>` : ''}
+        <div class="chart-footer-note">Source: this tool's live "Daily Data" Google Sheet — figures recomputed live from the same dataset shown in the Daily Log tab.</div>`;
+}
+
+function renderMonthChart() {
+    const sel = document.getElementById('monthPicker');
+    const card = document.getElementById('monthChartCard');
+    if (!sel.value) { card.innerHTML = '<div class="no-data-note">No data loaded yet.</div>'; return; }
+    const [y, m] = sel.value.split('-').map(Number);
+    const agg = aggregateMonth(y, m);
+    if (!agg) { card.innerHTML = '<div class="no-data-note">No data in range</div>'; return; }
+    const days = buildDailySeries(y, m);
+    const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
+
+    card.innerHTML = `
+        <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
+        <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · label above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
+        <div class="chart-legend">
+            <span><span class="sw tanker"></span>Tanker</span>
+            <span><span class="sw kwa"></span>KWA</span>
+            <span><span class="sw rain"></span>Rainwater</span>
+        </div>
+        ${buildMonthChartSvg(days)}
+        ${renderMonthInsight(y, m, agg, days)}`;
+}
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+// ---------- Refresh orchestration ----------
+function setLiveStatus(text, cls) {
+    const el = document.getElementById('liveStatus');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'live-status' + (cls ? ' ' + cls : '');
+}
+
+function refreshUI() {
+    populateMonthSelect();
+    populateYearTabs();
+    applyFilters();
+    populateMonthPicker();
+    renderMonthChart();
+}
+
+let liveRefreshInFlight = false;
+
+function refreshLiveData() {
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+
+    const btn = document.getElementById('refreshBtn');
+    const btnLabel = document.getElementById('refreshBtnLabel');
+    if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+    if (btnLabel) btnLabel.textContent = 'Refreshing…';
+    setLiveStatus('Fetching latest data…', 'loading');
+
+    loadLiveSheetData()
+        .then(resp => {
+            const { records } = parseDailyData(resp);
+            RECORDS = records.filter(r => YEARS_IN_SCOPE.includes(r.date.getFullYear()));
+            refreshUI();
+            const stamp = new Date().toLocaleString();
+            setLiveStatus(`🔵 Live data as of ${stamp} (${RECORDS.length} days total loaded, 2025–2026)`, 'live');
+        })
+        .catch(err => {
+            console.warn('Water supply sheet fetch failed.', err);
+            if (RECORDS.length === 0) {
+                setLiveStatus('⚪ Could not load live data — no data to show. Press Refresh to retry.', 'offline');
+            } else {
+                setLiveStatus('⚪ Could not refresh — showing last known data', 'offline');
+            }
+        })
+        .finally(() => {
+            liveRefreshInFlight = false;
+            if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+            if (btnLabel) btnLabel.textContent = 'Refresh';
+        });
+}
+
+document.getElementById('searchBox').addEventListener('input', applyFilters);
+document.getElementById('monthSelect').addEventListener('change', applyFilters);
+document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
+document.getElementById('monthPicker').addEventListener('change', renderMonthChart);
+document.getElementById('refreshBtn').addEventListener('click', refreshLiveData);
+document.querySelector('.stat-card.anomaly').addEventListener('click', openFlagModal);
+document.getElementById('flagModalClose').addEventListener('click', closeFlagModal);
+document.getElementById('flagModalOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeFlagModal();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFlagModal(); });
+document.getElementById('calIconNum').textContent = new Date().getDate();
+
+populateMonthSelect();
+refreshLiveData();
+</script>
+
+</body>
+</html>
