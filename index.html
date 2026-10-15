@@ -1022,7 +1022,17 @@ function refreshLiveData() {
         });
 }
 
-document.getElementById('searchBox').addEventListener('input', applyFilters);
+// Debounce the search box only — it's the one high-frequency input (fires per keystroke) and
+// each applyFilters() call re-filters/re-sorts/re-renders the full log table. Month/anomaly
+// filters stay instant since those are low-frequency (one click, not a keystroke stream).
+function debounce(fn, delayMs) {
+    let timer = null;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delayMs);
+    };
+}
+document.getElementById('searchBox').addEventListener('input', debounce(applyFilters, 180));
 document.getElementById('monthSelect').addEventListener('change', applyFilters);
 document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
 document.getElementById('monthPicker').addEventListener('change', renderMonthChart);
