@@ -991,8 +991,8 @@ function refreshLiveData() {
             const { records } = parseDailyData(resp);
             RECORDS = records.filter(r => YEARS_IN_SCOPE.includes(r.date.getFullYear()));
             refreshUI();
-            const stamp = new Date().toLocaleString();
-            setLiveStatus(`🔵 Live data as of ${stamp} (${RECORDS.length} days total loaded, 2025–2026)`, 'live');
+            const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+            setLiveStatus(`🔵 Live data as of ${stamp} IST (${RECORDS.length} days total loaded, 2025–2026)`, 'live');
         })
         .catch(err => {
             console.warn('Water supply sheet fetch failed.', err);
