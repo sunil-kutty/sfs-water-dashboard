@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SFSSD Water Supply Dashboard (Secure)</title>
+<title>SFS SD Water Supply Dashboard (Secure)</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%232563eb' d='M16 2c-5 8-10 13.5-10 19a10 10 0 0020 0c0-5.5-5-11-10-19z'/%3E%3C/svg%3E">
-<meta name="description" content="Live daily water supply tracker for SFSSD — Tanker, Rainwater &amp; KWA figures for 2025–2026, sourced from the society's Google Sheet.">
-<meta property="og:title" content="SFSSD Water Supply Dashboard">
+<meta name="description" content="Live daily water supply tracker for SFS SD — Tanker, Rainwater &amp; KWA figures for 2025–2026, sourced from the society's Google Sheet.">
+<meta property="og:title" content="SFS SD Water Supply Dashboard">
 <meta property="og:description" content="Live daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025–2026.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sunil-kutty.github.io/sfs-water-dashboard/">
@@ -26,6 +26,18 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.12);
     }
     header h1 { font-size: 1.6rem; letter-spacing: 0.3px; }
+    .beta-badge {
+        display: inline-block;
+        vertical-align: super;
+        margin-left: 8px;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.4);
+    }
     header p { margin-top: 6px; font-size: 0.85rem; opacity: 0.9; }
     .live-status {
         margin-top: 10px;
@@ -351,6 +363,14 @@
         padding: 0 20px;
     }
 
+    footer .confidential {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #4b5563;
+    }
+
     @media (max-width: 480px) {
         .controls { flex-direction: column; align-items: stretch; }
         #searchBox { min-width: 0; }
@@ -361,7 +381,7 @@
 <body>
 
 <header>
-    <h1>SFSSD Water Supply Dashboard</h1>
+    <h1>SFS SD Water Supply Dashboard <span class="beta-badge" title="Still being refined — layout, wording and features may change">BETA</span></h1>
     <p>Daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025–2026</p>
     <div class="live-status" id="liveStatus">Loading live data…</div>
     <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data via the Apps Script Web App">
@@ -445,34 +465,28 @@
             <div id="monthChartCard"></div>
         </div>
         <div class="note-box">
-            Built only from this tool's 2025–2026 dataset. Tanker figures use nominal volume (loads × 12,000 L) —
-            the source sheet's own "Actuals" column has a recurring meter-formula glitch and isn't summed.
+            Covers only this tool's 2025–2026 dataset. Tanker figures use nominal volume (loads × 12,000 L) —
+            the sheet's "Actuals" column has a recurring glitch and isn't summed.
             Rainwater and KWA figures exclude flagged/anomalous days (see Daily Log tab); the excluded-day count,
             if any, is shown below the chart.
         </div>
     </div>
 
     <div class="note-box">
-        <strong>Known data caveats in the source sheet (flagged, not hidden):</strong>
-        (1) "Tanker Water Actuals" shows broken placeholder values (huge negative/positive numbers) on days
-        adjacent to a missing meter reading — this column is never summed into totals here (nominal tanker
-        volume = loads × 12,000 L is used instead); affected rows are shown with ⚠ in the log.
-        (2) The "Rainwater" column switched units partway through — most of 2025–2026 is a small count of
-        12,000 L equivalents, but entries from early Sep 2026 onward use raw litres directly; this tool
-        auto-detects which (≤10 ⇒ equivalents, &gt;10 ⇒ already litres) and flags the raw-litre rows.
-        (3) A few days have "pool water" logged in the Rainwater column by mistake (per the sheet's own
-        remarks) — excluded from rainwater totals here. (4) KWA 1 / KWA 2 are shown as raw cumulative
-        meter readings (KL) exactly as recorded — this tool does not attempt to split the daily "KWA Water
-        Received" total back into a per-index (KWA1 vs KWA2) share.
+        <strong>Known data caveats in the source sheet, as on 16 Oct 2026 (flagged, not hidden):</strong>
+        <ul style="margin:6px 0 0 18px; padding:0;">
+            <li>"Tanker Water Actuals" shows broken placeholder values (huge negative/positive numbers) near missing meter readings — excluded from totals (nominal = loads × 12,000 L used instead); flagged rows show ⚠.</li>
+            <li>The "Rainwater" column switched units partway through — most entries are counts of 12,000 L equivalents, but from early Sep 2026 onward it's raw litres; auto-detected (≤10 ⇒ equivalents, &gt;10 ⇒ litres) and flagged.</li>
+            <li>A few days have "pool water" mistakenly logged in Rainwater (per the sheet's own remarks) — excluded from totals.</li>
+            <li>KWA 1 / KWA 2 are raw cumulative meter readings (KL) as recorded — the daily "KWA Water Received" total isn't split back into a KWA1 vs KWA2 share.</li>
+        </ul>
     </div>
 
 </div>
 
 <footer>
-    Data loads live via a Google Apps Script Web App proxy (no sheet ID exposed in this page) ·
-    "Daily Data" tab, filtered to 2025–2026 · Press Refresh to re-sync ·
-    Read-only — no data entry, nothing is written back to the sheet ·
-    Powered by Google Apps Script (GAS)
+    <span class="confidential">Confidential — Internal use by SFS SD Association only.</span>
+    Data syncs live from the Water Consumption History sheet (a live mirror of the SFS SD Drive sheet) · Covers 2025–2026 · Read-only — nothing is edited from here.
 </footer>
 
 <script>
@@ -935,7 +949,7 @@ function renderMonthInsight(y, m, agg, days) {
             ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
         </div>
         ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — see Daily Log tab.</div>` : ''}
-        <div class="chart-footer-note">Source: live data via the Apps Script Web App proxy — figures recomputed live from the same dataset shown in the Daily Log tab.</div>`;
+        <div class="chart-footer-note">Recomputed live from the same dataset as the Daily Log tab.</div>`;
 }
 
 function renderMonthChart() {
