@@ -720,7 +720,10 @@ function closeFlagModal() {
 
 function noteCell(r) {
     const parts = [];
-    if (r.leak) parts.push(`<span class="leak-tag">⚠ ${escapeHtml(r.leak)}</span>`);
+    // Uses 🔧 (not ⚠) deliberately — a leak report is operational info, not a data-quality
+    // anomaly. ⚠ is reserved for the "Source-sheet anomaly — excluded from totals" meaning
+    // (see the badge warn spans below) so the two concepts don't visually collide.
+    if (r.leak) parts.push(`<span class="leak-tag">🔧 ${escapeHtml(r.leak)}</span>`);
     if (r.remarks) parts.push(`<span class="remark-tag">${escapeHtml(r.remarks)}</span>`);
     if (r.isPoolWater) parts.push(`<span class="badge warn" title="Logged in the Rainwater column by mistake per the sheet's own remark — excluded from rainwater totals">Pool water — excluded</span>`);
     if (r.rainwaterUnitRaw) parts.push(`<span class="badge info" title="This row's Rainwater value is already in litres (source format switched from equivalents partway through 2026)">raw-L format</span>`);
