@@ -494,13 +494,7 @@
 
 <script>
 // ---------- Config ----------
-// Unlike the original dashboard, this version does NOT embed the Google Sheet ID anywhere in
-// this file. All data access goes through a Google Apps Script Web App (see the companion file
-// SFS_Water_Dashboard_Secure_AppsScript.gs) which holds the sheet ID server-side.
-//
-// >>> REQUIRED: replace the placeholder below with your deployed Web App URL <<<
-// Get it from: Extensions > Apps Script (on Sunil's sheet) > Deploy > New deployment > Web app.
-// It looks like: https://script.google.com/macros/s/AKfycb.../exec
+// To redeploy: Extensions > Apps Script (on Sunil's sheet) > Deploy > New deployment > Web app.
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbysfLekap8COYp7irKgfCsCt6MZvyWQQy9-U_YUuZkFjY5-vjoQBFszrAoA0RuVpOh-/exec';
 
 const LIVE_FETCH_TIMEOUT_MS = 20000; // Apps Script Web App responses are slower than a direct Sheets call (cold starts + redirect hop); 8s was too tight and caused spurious "could not load" errors.
