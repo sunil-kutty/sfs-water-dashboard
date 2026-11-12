@@ -90,6 +90,22 @@
         box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .stat-card .num { font-size: 1.25rem; font-weight: 700; color: #2563eb; }
+    /* Supply-mix donut card (6th stat card): 1 row of 6 on wide screens, 3+3 on tablets, 2 per row on phones */
+    .stat-card.mix { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; text-align: left; }
+    .mix-donut { flex: 0 0 auto; width: 54px; height: 54px; }
+    .mix-legend { font-size: 0.7rem; color: #374151; line-height: 1.5; white-space: nowrap; }
+    .mix-legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
+    .mix-legend b { font-weight: 700; }
+    .mix-title { font-size: 0.68rem; color: #6b7280; margin-bottom: 1px; }
+    @media (min-width: 760px) {
+        .stats { max-width: 1000px; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.6fr); }
+    }
+    @media (min-width: 481px) and (max-width: 759px) {
+        .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 480px) {
+        .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     .stat-card .label { font-size: 0.72rem; color: #6b7280; margin-top: 2px; }
     .stat-card.anomaly .num { color: #b45309; }
     .stat-card.anomaly {
@@ -406,6 +422,10 @@
         <div class="stat-card"><div class="num" id="statRain">0</div><div class="label">Rainwater (L)</div></div>
         <div class="stat-card"><div class="num" id="statKwa">0</div><div class="label">KWA Water (L)</div></div>
         <div class="stat-card anomaly" title="Rows with an excluded formula-glitch value (Tanker Actuals or negative KWA), a pool-water mislog, or a raw-litre rainwater unit note — not all of these show a red ⚠ in the log, see caveats below"><div class="num" id="statAnomaly">0</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
+        <div class="stat-card mix" id="mixCard" title="Share of total water supplied in the period shown — same totals as the cards (Tanker = loads × 12,000 L)">
+            <svg class="mix-donut" id="mixDonut" viewBox="0 0 42 42" aria-hidden="true"></svg>
+            <div class="mix-legend" id="mixLegend"></div>
+        </div>
     </div>
 
     <div class="tabs">
@@ -668,6 +688,34 @@ function renderStats(records) {
     document.getElementById('statRain').textContent = fmt(rainL);
     document.getElementById('statKwa').textContent = fmt(kwaL);
     document.getElementById('statAnomaly').textContent = anomalyCount;
+    renderMixDonut(tankerLoads * TANKER_LOAD_L, kwaL, rainL);
+}
+
+// Donut of Tanker / KWA / Rainwater share, built from the exact same totals as the cards above
+function renderMixDonut(tankerL, kwaL, rainL) {
+    const parts = [
+        { label: 'Tanker', v: tankerL, color: '#9333ea' },
+        { label: 'KWA', v: kwaL, color: '#1d4ed8' },
+        { label: 'Rainwater', v: rainL, color: '#047857' }
+    ];
+    const total = parts.reduce((a, p) => a + p.v, 0);
+    const svg = document.getElementById('mixDonut');
+    const legend = document.getElementById('mixLegend');
+    const R = 15.9155; // circumference = 100, so dash lengths are percentages
+    let rings = `<circle cx="21" cy="21" r="${R}" fill="none" stroke="#e5e7eb" stroke-width="7"/>`;
+    if (total > 0) {
+        let offset = 25; // start at 12 o'clock
+        parts.forEach(p => {
+            const pct = p.v / total * 100;
+            if (pct <= 0) return;
+            rings += `<circle cx="21" cy="21" r="${R}" fill="none" stroke="${p.color}" stroke-width="7" stroke-dasharray="${pct.toFixed(3)} ${(100 - pct).toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}"/>`;
+            offset -= pct;
+        });
+    }
+    svg.innerHTML = rings;
+    legend.innerHTML = `<div class="mix-title">Supply mix</div>` + (total > 0
+        ? parts.map(p => `<div><span class="sw" style="background:${p.color}"></span>${p.label} <b>${Math.round(p.v / total * 100)}%</b></div>`).join('')
+        : '<div>No supply in this view</div>');
 }
 
 function describeFlag(r) {
