@@ -126,6 +126,9 @@
         box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .stat-card .num { font-size: 1.25rem; font-weight: 700; color: #2563eb; }
+    .stats[data-state] .stat-card .num { color: #6b7280; } /* "…" while loading, "—" if loading failed: grey, never a real-looking 0 */
+    .stats[data-state] .tap-hint { visibility: hidden; } /* nothing to tap until data has loaded */
+    td.state-cell { text-align: center; color: #6b7280; padding: 24px 12px; white-space: normal; }
     /* Supply-mix donut card (6th stat card): 1 row of 6 on wide screens, 3+3 on tablets, 2 per row on phones */
     .stat-card.mix { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 8px; padding: 8px; text-align: left; } /* wrap = legend drops under the donut on very narrow phones instead of spilling out */
     .mix-donut { flex: 0 0 auto; width: 46px; height: 46px; }
@@ -518,6 +521,7 @@
     html.dark .live-status.live { background: rgba(15,23,42,0.55); color: #bfdbfe; } /* no bright white pill in dark */
     html.dark .live-status.offline { background: rgba(15,23,42,0.55); color: #fca5a5; }
     html.dark .stat-card .num { color: #60a5fa; }
+    html.dark .stats[data-state] .stat-card .num, html.dark td.state-cell { color: #94a3b8; }
     html.dark .stat-card .label, html.dark .mix-title, html.dark #resultCount, html.dark .legend,
     html.dark .chart-sub, html.dark .remark-tag { color: #94a3b8; }
     html.dark .mix-legend, html.dark .chart-legend { color: #cbd5e1; }
@@ -586,17 +590,17 @@
         </select>
     </div>
 
-    <div class="period-row"><div class="period-label" id="periodLabel" role="status" aria-live="polite"></div></div>
+    <div class="period-row"><div class="period-label" id="periodLabel" role="status" aria-live="polite">Loading data…</div></div>
 
-    <div class="stats">
-        <div class="stat-card"><div class="num" id="statDays">0</div><div class="label">Days Logged</div></div>
-        <div class="stat-card"><div class="num" id="statTanker">0</div><div class="label">Tanker Loads (Total)</div></div>
-        <div class="stat-card"><div class="num" id="statRain">0</div><div class="label">Rainwater (L)</div></div>
-        <div class="stat-card"><div class="num" id="statKwa">0</div><div class="label">KWA Water (L)</div></div>
-        <div class="stat-card anomaly" title="Days where one value in the source sheet looked wrong. A flagged day is still counted — only the wrong value is handled: a broken Tanker Actuals reading is ignored (tankers are counted as loads × 12,000 L), pool water entered as Rainwater is left out, a negative KWA reading is left out, and Rainwater typed in litres is counted as litres. Tap to see each day."><div class="num" id="statAnomaly">0</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
+    <div class="stats" id="statsBox" data-state="loading">
+        <div class="stat-card"><div class="num" id="statDays">…</div><div class="label">Days Logged</div></div>
+        <div class="stat-card"><div class="num" id="statTanker">…</div><div class="label">Tanker Loads (Total)</div></div>
+        <div class="stat-card"><div class="num" id="statRain">…</div><div class="label">Rainwater (L)</div></div>
+        <div class="stat-card"><div class="num" id="statKwa">…</div><div class="label">KWA Water (L)</div></div>
+        <div class="stat-card anomaly" title="Days where one value in the source sheet looked wrong. A flagged day is still counted — only the wrong value is handled: a broken Tanker Actuals reading is ignored (tankers are counted as loads × 12,000 L), pool water entered as Rainwater is left out, a negative KWA reading is left out, and Rainwater typed in litres is counted as litres. Tap to see each day."><div class="num" id="statAnomaly">…</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
         <div class="stat-card mix" id="mixCard" title="Share of total water supplied in the period shown — same totals as the cards (Tanker = loads × 12,000 L)">
-            <svg class="mix-donut" id="mixDonut" viewBox="0 0 42 42" aria-hidden="true"></svg>
-            <div class="mix-legend" id="mixLegend"></div>
+            <svg class="mix-donut" id="mixDonut" viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="15.9155" fill="none" style="stroke:var(--c-ring)" stroke-width="7"/></svg>
+            <div class="mix-legend" id="mixLegend"><div class="mix-title">Supply mix</div><div>Loading…</div></div>
         </div>
     </div>
 
@@ -642,7 +646,7 @@
                         <th>Notes</th>
                     </tr>
                 </thead>
-                <tbody id="logBody"></tbody>
+                <tbody id="logBody"><tr><td colspan="8" class="state-cell">Loading data…</td></tr></tbody>
             </table>
         </div>
         <div id="noResults">No matching day found.</div>
@@ -651,7 +655,7 @@
     <!-- ===== Monthly Chart panel ===== -->
     <div class="panel" id="panel-compare">
         <div class="compare-wrap">
-            <div id="monthChartCard"></div>
+            <div id="monthChartCard"><div class="no-data-note">Loading data…</div></div>
         </div>
         <div class="note-box">
             Covers only this tool's dataset (2025 onward). Tanker figures use nominal volume (loads × 12,000 L) —
@@ -1378,6 +1382,22 @@ function refreshUI() {
 
 let liveRefreshInFlight = false;
 
+// Shown only while no data has loaded yet ("loading"), or when the first load failed ("failed").
+// Once data is on screen, Refresh keeps the current numbers until new ones arrive.
+function showPlaceholders(state) {
+    const mark = state === 'loading' ? '…' : '—';
+    const msg = state === 'loading' ? 'Loading data…' : 'Could not load data — press Refresh to try again.';
+    document.getElementById('statsBox').setAttribute('data-state', state);
+    ['statDays', 'statTanker', 'statRain', 'statKwa', 'statAnomaly'].forEach(id => { document.getElementById(id).textContent = mark; });
+    document.getElementById('mixDonut').innerHTML = '<circle cx="21" cy="21" r="15.9155" fill="none" style="stroke:var(--c-ring)" stroke-width="7"/>';
+    document.getElementById('mixLegend').innerHTML = `<div class="mix-title">Supply mix</div><div>${state === 'loading' ? 'Loading…' : 'No data'}</div>`;
+    const pl = document.getElementById('periodLabel'); pl.classList.remove('filtered'); pl.textContent = state === 'loading' ? 'Loading data…' : 'No data loaded';
+    document.getElementById('logBody').innerHTML = `<tr><td colspan="8" class="state-cell">${msg}</td></tr>`;
+    document.getElementById('monthChartCard').innerHTML = `<div class="no-data-note">${msg}</div>`;
+    document.getElementById('resultCount').textContent = '';
+    document.getElementById('noResults').style.display = 'none';
+}
+
 function refreshLiveData() {
     if (liveRefreshInFlight) return;
     liveRefreshInFlight = true;
@@ -1387,19 +1407,25 @@ function refreshLiveData() {
     if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
     if (btnLabel) btnLabel.textContent = 'Refreshing…';
     setLiveStatus('Fetching latest data…', 'loading');
+    if (RECORDS.length === 0) showPlaceholders('loading'); // e.g. retry after a failed first load
 
     loadLiveSheetData()
         .then(resp => {
             const { records } = parseDailyData(resp);
             RECORDS = records.filter(r => r.date.getFullYear() >= MIN_YEAR_IN_SCOPE);
+            document.getElementById('statsBox').removeAttribute('data-state');
             refreshUI();
-            const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+            // Time the data was actually read from the sheet (sent by the web app), not when this
+            // browser received it — the web app may serve a copy up to 5 minutes old from its cache.
+            const readAt = resp && resp.fetchedAt ? new Date(resp.fetchedAt) : null;
+            const stamp = (readAt && !isNaN(readAt) ? readAt : new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 .replace(/\b(am|pm)\b/i, m => m.toUpperCase());
             setLiveStatus(`💧 Live data as of ${stamp} IST (${RECORDS.length} days total loaded, ${yearRangeLabel()})`, 'live');
         })
         .catch(err => {
             console.warn('Water supply sheet fetch failed.', err);
             if (RECORDS.length === 0) {
+                showPlaceholders('failed');
                 setLiveStatus('⚪ Could not load live data — no data to show. Press Refresh to retry.', 'offline');
             } else {
                 setLiveStatus('⚪ Could not refresh — showing last known data', 'offline');
