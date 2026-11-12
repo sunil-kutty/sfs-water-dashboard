@@ -3,6 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// Dark mode: follow the phone/computer setting automatically (and switch live if it changes).
+// Runs in <head> so the page never flashes white before going dark.
+(function () {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    function applyTheme() { document.documentElement.classList.toggle('dark', mq.matches); }
+    if (mq.addEventListener) mq.addEventListener('change', applyTheme); else if (mq.addListener) mq.addListener(applyTheme);
+    applyTheme();
+})();
+</script>
 <title>SD Water Supply Dashboard (Secure)</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%232563eb' d='M16 2c-5 8-10 13.5-10 19a10 10 0 0020 0c0-5.5-5-11-10-19z'/%3E%3C/svg%3E">
@@ -117,8 +127,8 @@
         transform: translateY(-1px);
     }
     .stat-card.anomaly .tap-hint {
-        font-size: 0.65rem;
-        color: #b45309;
+        font-size: 0.75rem;
+        color: #92400e;
         font-weight: 600;
         margin-top: 4px;
         opacity: 0.85;
@@ -323,10 +333,31 @@
     .chart-sub { font-size: 0.78rem; color: #6b7280; margin-top: 2px; margin-bottom: 14px; }
     .chart-legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 0.78rem; color: #374151; }
     .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
-    .sw.tanker { background: #9333ea; }
-    .sw.rain { background: #047857; }
-    .sw.kwa { background: #1d4ed8; }
+    .sw.tanker { background: var(--c-tanker); }
+    .sw.rain { background: var(--c-rain); }
+    .sw.kwa { background: var(--c-kwa); }
     .chart-svg-wrap { width: 100%; overflow-x: auto; }
+    /* Monthly chart text. The chart is drawn 900 wide and shrunk to fit, so on smaller screens the
+       sizes below are raised to keep the text readable on screen (about 10-11 px). */
+    .chart-svg-wrap .ax-y { font-size: 10px; }
+    .chart-svg-wrap .ax-x { font-size: 9px; }
+    .chart-svg-wrap .bar-kl { font-size: 8.5px; }
+    @media (max-width: 999px) {
+        .chart-svg-wrap .ax-y { font-size: 12px; }
+        .chart-svg-wrap .ax-x { font-size: 11.5px; }
+        .chart-svg-wrap .bar-kl { font-size: 10.5px; }
+        .chart-svg-wrap .kl-unit { display: none; } /* unit stays in the subtitle */
+    }
+    @media (max-width: 899px) {
+        .chart-svg-wrap .ax-y { font-size: 14px; }
+        .chart-svg-wrap .ax-x { font-size: 13.5px; }
+        .chart-svg-wrap .bar-kl { font-size: 12px; }
+    }
+    @media (max-width: 760px) {
+        .chart-svg-wrap .ax-y { font-size: 15px; }
+        .chart-svg-wrap .ax-x { font-size: 16px; }
+        .chart-svg-wrap .bar-kl { font-size: 14px; }
+    }
     .insight-box {
         margin-top: 16px;
         background: #eff6ff;
@@ -416,6 +447,64 @@
         #searchBox { min-width: 0; }
         select, label.chk { width: 100%; }
     }
+    /* ---------- Colours shared by CSS and the charts (light = same values as before) ---------- */
+    :root {
+        --c-tanker: #9333ea; --c-kwa: #1d4ed8; --c-rain: #059669; /* middle green: brighter, separates from purple/blue; badge text keeps #047857 */
+        --c-ring: #e5e7eb; --c-grid: #e5e7eb; --c-axis: #9ca3af; --c-axis-text: #9ca3af;
+        --c-bar-label: #374151; --c-day: #6b7280; --c-dash: #d1d5db;
+        --c-seg-gap: none; /* light: bars unchanged */
+    }
+    /* ---------- Dark mode (switched on by the 'dark' class on <html>) ---------- */
+    html.dark {
+        color-scheme: dark; /* native scrollbars, dropdown lists and checkboxes go dark too */
+        --c-tanker: #c084fc; --c-kwa: #3b82f6; --c-rain: #10b981; /* brighter so they read on dark; Tanker lighter than KWA so the two don't blur together */
+        --c-ring: #334155; --c-grid: #2b3a50; --c-axis: #64748b; --c-axis-text: #94a3b8;
+        --c-bar-label: #cbd5e1; --c-day: #94a3b8; --c-dash: #7c8ba1;
+        --c-seg-gap: #1e293b; /* thin card-coloured line between stacked bar parts */
+    }
+    html.dark body { background: #0f172a; color: #e2e8f0; }
+    html.dark header { background: linear-gradient(135deg, #172554, #1e3a8a 60%, #1d4ed8); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    html.dark .stat-card, html.dark .table-scroll, html.dark .compare-wrap { background: #1e293b; box-shadow: 0 0 0 1px rgba(148,163,184,0.12), 0 1px 4px rgba(0,0,0,0.5); } /* faint edge: shadows don't show on dark */
+    html.dark .live-status.live { background: rgba(15,23,42,0.55); color: #bfdbfe; } /* no bright white pill in dark */
+    html.dark .live-status.offline { background: rgba(15,23,42,0.55); color: #fca5a5; }
+    html.dark .stat-card .num { color: #60a5fa; }
+    html.dark .stat-card .label, html.dark .mix-title, html.dark #resultCount, html.dark .legend,
+    html.dark .chart-sub, html.dark .remark-tag { color: #94a3b8; }
+    html.dark .mix-legend, html.dark .chart-legend { color: #cbd5e1; }
+    html.dark .stat-card.anomaly .num, html.dark .stat-card.anomaly .tap-hint { color: #fbbf24; }
+    html.dark .stat-card.anomaly:hover { box-shadow: 0 2px 10px rgba(251,191,36,0.25); }
+    html.dark .scope-label { color: #94a3b8; }
+    html.dark .period-label { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+    html.dark .period-label.filtered,
+    html.dark select.filter-on, html.dark #searchBox.filter-on, html.dark label.chk.filter-on {
+        background: #172554; border-color: #3b82f6; color: #bfdbfe; box-shadow: 0 0 0 2px rgba(59,130,246,0.25);
+    }
+    html.dark .period-label.filtered { box-shadow: none; }
+    html.dark .year-btn, html.dark .tab-btn, html.dark select, html.dark #searchBox, html.dark label.chk {
+        background: #1e293b; border-color: #475569; color: #e2e8f0;
+    }
+    html.dark #searchBox::placeholder { color: #64748b; }
+    html.dark .year-btn.active, html.dark .tab-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+    html.dark select:disabled { background: #172033; color: #64748b; border-color: #334155; }
+    html.dark thead th { background: #243145; color: #94a3b8; border-bottom-color: #334155; }
+    html.dark tbody td { border-bottom-color: #263244; }
+    html.dark tbody tr:hover { background: #243145; }
+    html.dark tbody tr.anomaly-row { background: rgba(245,158,11,0.10); }
+    html.dark .badge.tanker { background: rgba(168,85,247,0.20); color: #d8b4fe; }
+    html.dark .badge.rain { background: rgba(16,185,129,0.18); color: #6ee7b7; }
+    html.dark .badge.kwa { background: rgba(59,130,246,0.20); color: #93c5fd; }
+    html.dark .badge.warn { background: rgba(239,68,68,0.18); color: #fca5a5; }
+    html.dark .badge.info { background: #334155; color: #cbd5e1; }
+    html.dark .leak-tag { color: #f87171; }
+    html.dark #noResults, html.dark .no-data-note, html.dark .chart-footer-note, html.dark footer { color: #8b9ab0; }
+    html.dark footer .confidential { color: #94a3b8; }
+    html.dark .partial-badge { background: rgba(245,158,11,0.18); color: #fcd34d; }
+    html.dark .chart-title { color: #f1f5f9; }
+    html.dark .insight-box { background: #172554; border-color: #1e40af; color: #bfdbfe; }
+    html.dark .insight-box strong { color: #dbeafe; }
+    html.dark .note-box, html.dark .flag-modal { background: #2a2111; border-color: #78591a; color: #fcd34d; }
+    html.dark .flag-modal-close { color: #fcd34d; }
+    html.dark .flag-modal-overlay { background: rgba(0,0,0,0.6); }
 </style>
 </head>
 <body>
@@ -505,7 +594,7 @@
     <div class="panel" id="panel-compare">
         <div class="compare-wrap">
             <div class="compare-pick">
-                <label for="monthPicker" style="font-size:0.85rem;color:#374151;font-weight:600;">Select month:</label>
+                <label for="monthPicker" style="font-size:0.85rem;color:var(--c-bar-label);font-weight:600;">Select month:</label>
                 <select id="monthPicker"></select>
             </div>
             <div id="monthChartCard"></div>
@@ -716,21 +805,21 @@ function renderStats(records) {
 // Donut of Tanker / KWA / Rainwater share, built from the exact same totals as the cards above
 function renderMixDonut(tankerL, kwaL, rainL) {
     const parts = [
-        { label: 'Tanker', v: tankerL, color: '#9333ea' },
-        { label: 'KWA', v: kwaL, color: '#1d4ed8' },
-        { label: 'Rainwater', v: rainL, color: '#047857' }
+        { label: 'Tanker', v: tankerL, color: 'var(--c-tanker)' },
+        { label: 'KWA', v: kwaL, color: 'var(--c-kwa)' },
+        { label: 'Rainwater', v: rainL, color: 'var(--c-rain)' }
     ];
     const total = parts.reduce((a, p) => a + p.v, 0);
     const svg = document.getElementById('mixDonut');
     const legend = document.getElementById('mixLegend');
     const R = 15.9155; // circumference = 100, so dash lengths are percentages
-    let rings = `<circle cx="21" cy="21" r="${R}" fill="none" stroke="#e5e7eb" stroke-width="7"/>`;
+    let rings = `<circle cx="21" cy="21" r="${R}" fill="none" style="stroke:var(--c-ring)" stroke-width="7"/>`;
     if (total > 0) {
         let offset = 25; // start at 12 o'clock
         parts.forEach(p => {
             const pct = p.v / total * 100;
             if (pct <= 0) return;
-            rings += `<circle cx="21" cy="21" r="${R}" fill="none" stroke="${p.color}" stroke-width="7" stroke-dasharray="${pct.toFixed(3)} ${(100 - pct).toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}"/>`;
+            rings += `<circle cx="21" cy="21" r="${R}" fill="none" style="stroke:${p.color}" stroke-width="7" stroke-dasharray="${pct.toFixed(3)} ${(100 - pct).toFixed(3)}" stroke-dashoffset="${offset.toFixed(3)}"/>`;
             offset -= pct;
         });
     }
@@ -795,7 +884,7 @@ function noteCell(r) {
     if (r.remarks) parts.push(`<span class="remark-tag">${escapeHtml(r.remarks)}</span>`);
     if (r.isPoolWater) parts.push(`<span class="badge warn" title="Logged in the Rainwater column by mistake per the sheet's own remark — excluded from rainwater totals">Pool water — excluded</span>`);
     if (r.rainwaterUnitRaw) parts.push(`<span class="badge info" title="This row's Rainwater value is already in litres (source format switched from equivalents partway through 2026)">raw-L format</span>`);
-    return parts.join('<br>') || '<span style="color:#d1d5db;">—</span>';
+    return parts.join('<br>') || '<span style="color:var(--c-dash)">—</span>';
 }
 
 function renderRow(r) {
@@ -1004,7 +1093,7 @@ function niceAxisMax(v) {
 
 function buildMonthChartSvg(days) {
     const W = 900, H = 380;
-    const marginL = 58, marginR = 16, marginT = 28, marginB = 36;
+    const marginL = 72, marginR = 16, marginT = 28, marginB = 36; // 72 (was 58): room for bigger y-axis numbers on phones
     const plotW = W - marginL - marginR;
     const plotH = H - marginT - marginB;
     const n = days.length;
@@ -1016,8 +1105,8 @@ function buildMonthChartSvg(days) {
     for (let i = 0; i <= steps; i++) {
         const val = niceMax / steps * i;
         const y = marginT + plotH - (val / niceMax * plotH);
-        gridlines += `<line x1="${marginL}" y1="${y}" x2="${W - marginR}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
-        gridlines += `<text x="${marginL - 8}" y="${y + 3}" font-size="10" fill="#9ca3af" text-anchor="end">${fmt(Math.round(val))}</text>`;
+        gridlines += `<line x1="${marginL}" y1="${y}" x2="${W - marginR}" y2="${y}" style="stroke:var(--c-grid)" stroke-width="1"/>`;
+        gridlines += `<text x="${marginL - 8}" y="${y + 3}" class="ax-y" style="fill:var(--c-axis-text)" text-anchor="end">${fmt(Math.round(val))}</text>`;
     }
 
     const slotW = plotW / n;
@@ -1028,29 +1117,29 @@ function buildMonthChartSvg(days) {
         const x = marginL + i * slotW + (slotW - barW) / 2;
         let yCursor = marginT + plotH;
         [
-            { v: d.tankerL, color: '#9333ea', label: 'Tanker' },
-            { v: d.kwaL, color: '#1d4ed8', label: 'KWA' },
-            { v: d.rainL, color: '#047857', label: 'Rainwater' }
+            { v: d.tankerL, color: 'var(--c-tanker)', label: 'Tanker' },
+            { v: d.kwaL, color: 'var(--c-kwa)', label: 'KWA' },
+            { v: d.rainL, color: 'var(--c-rain)', label: 'Rainwater' }
         ].forEach(seg => {
             if (seg.v <= 0) return;
             const h = (seg.v / niceMax) * plotH;
             yCursor -= h;
-            bars += `<rect x="${x.toFixed(1)}" y="${yCursor.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${seg.color}"><title>Day ${d.day} — ${seg.label}: ${fmt(seg.v)} L</title></rect>`;
+            bars += `<rect x="${x.toFixed(1)}" y="${yCursor.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" style="fill:${seg.color};stroke:var(--c-seg-gap);stroke-width:0.75"><title>Day ${d.day} — ${seg.label}: ${fmt(seg.v)} L</title></rect>`;
         });
         if (d.total > 0) {
             const kl = d.total / 1000;
-            const klLabel = (kl >= 10 ? Math.round(kl) : kl.toFixed(1)) + ' KL';
-            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(yCursor - 4).toFixed(1)}" font-size="8.5" fill="#374151" text-anchor="middle">${klLabel}</text>`;
+            const klNum = (kl >= 10 ? Math.round(kl) : kl.toFixed(1)); // ' KL' unit is hidden on smaller screens so the bigger number still fits above its bar
+            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(yCursor - 4).toFixed(1)}" class="bar-kl" style="fill:var(--c-bar-label)" text-anchor="middle">${klNum}<tspan class="kl-unit"> KL</tspan></text>`;
         }
         if (d.day === 1 || d.day === n || d.day % labelStride === 0) {
-            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(marginT + plotH + 14).toFixed(1)}" font-size="9" fill="#6b7280" text-anchor="middle">${d.day}</text>`;
+            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(marginT + plotH + 14).toFixed(1)}" class="ax-x" style="fill:var(--c-day)" text-anchor="middle">${d.day}</text>`;
         }
     });
 
     return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" style="min-width:600px;width:100%;height:auto;">
         ${gridlines}
         ${bars}
-        <line x1="${marginL}" y1="${marginT + plotH}" x2="${W - marginR}" y2="${marginT + plotH}" stroke="#9ca3af" stroke-width="1"/>
+        <line x1="${marginL}" y1="${marginT + plotH}" x2="${W - marginR}" y2="${marginT + plotH}" style="stroke:var(--c-axis)" stroke-width="1"/>
     </svg></div>`;
 }
 
@@ -1088,7 +1177,7 @@ function renderMonthChart() {
 
     card.innerHTML = `
         <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
-        <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · label above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
+        <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
         <div class="chart-legend">
             <span><span class="sw tanker"></span>Tanker</span>
             <span><span class="sw kwa"></span>KWA</span>
