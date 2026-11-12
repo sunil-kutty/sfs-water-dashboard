@@ -91,16 +91,16 @@
     }
     .stat-card .num { font-size: 1.25rem; font-weight: 700; color: #2563eb; }
     /* Supply-mix donut card (6th stat card): 1 row of 6 on wide screens, 3+3 on tablets, 2 per row on phones */
-    .stat-card.mix { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; text-align: left; }
-    .mix-donut { flex: 0 0 auto; width: 54px; height: 54px; }
+    .stat-card.mix { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 8px; padding: 8px; text-align: left; } /* wrap = legend drops under the donut on very narrow phones instead of spilling out */
+    .mix-donut { flex: 0 0 auto; width: 46px; height: 46px; }
     .mix-legend { font-size: 0.7rem; color: #374151; line-height: 1.5; white-space: nowrap; }
     .mix-legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
     .mix-legend b { font-weight: 700; }
     .mix-title { font-size: 0.68rem; color: #6b7280; margin-bottom: 1px; }
-    @media (min-width: 760px) {
+    @media (min-width: 900px) { /* 6 in one row only when each card has room */
         .stats { max-width: 1000px; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.6fr); }
     }
-    @media (min-width: 481px) and (max-width: 759px) {
+    @media (min-width: 481px) and (max-width: 899px) {
         .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 480px) {
@@ -713,9 +713,12 @@ function renderMixDonut(tankerL, kwaL, rainL) {
         });
     }
     svg.innerHTML = rings;
+    // Plain rounding, deliberately the same as the Monthly Chart summary (toFixed(0)), so the
+    // same month never shows two different %s. Rounded shares can add up to 99 or 101 — expected.
+    const shown = parts.map(p => total > 0 ? Number((p.v / total * 100).toFixed(0)) : 0);
     legend.innerHTML = `<div class="mix-title">Supply mix</div>` + (total > 0
-        ? parts.map(p => `<div><span class="sw" style="background:${p.color}"></span>${p.label} <b>${Math.round(p.v / total * 100)}%</b></div>`).join('')
-        : '<div>No supply in this view</div>');
+        ? parts.map((p, i) => `<div><span class="sw" style="background:${p.color}"></span>${p.label} <b>${shown[i]}%</b></div>`).join('')
+        : '<div style="white-space: normal">No supply in this view</div>');
 }
 
 function describeFlag(r) {
