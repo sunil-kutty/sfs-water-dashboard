@@ -351,7 +351,10 @@
     }
 
     .compare-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); padding: 20px; margin-top: 10px; }
-    .compare-pick { display: flex; gap: 10px; align-items: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .scope-row #monthSelect { padding: 6px 30px 6px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; width: auto; color: inherit; }
+    .chart-filter-note { font-size: 0.75rem; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 10px; margin-bottom: 12px; }
+    html.dark .chart-filter-note { background: #172554; border-color: #1e40af; color: #bfdbfe; }
+    .month-bar:hover rect:not([fill="transparent"]) { opacity: 0.85; }
     .partial-badge { display:inline-block; margin-top:4px; font-size:0.65rem; background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:7px; }
     .no-data-note { font-size: 0.78rem; color: #9ca3af; font-style: italic; padding: 20px 0; text-align: center; }
 
@@ -472,6 +475,7 @@
         .controls { flex-direction: column; align-items: stretch; }
         #searchBox { min-width: 0; }
         select, label.chk { width: 100%; }
+        .scope-row #monthSelect { width: auto; }
     }
     /* ---------- Colours shared by CSS and the charts (light = same values as before) ---------- */
     :root {
@@ -557,6 +561,9 @@
     <div class="scope-row">
         <span class="scope-label">Showing data for:</span>
         <div class="year-tabs" id="yearTabs"></div>
+        <select id="monthSelect" aria-label="Month">
+            <option value="ALL">All Months</option>
+        </select>
     </div>
 
     <div class="period-row"><div class="period-label" id="periodLabel" role="status" aria-live="polite"></div></div>
@@ -582,9 +589,6 @@
     <div class="panel active" id="panel-log">
         <div class="controls">
             <input type="text" id="searchBox" placeholder="Search date, remarks or leak report...">
-            <select id="monthSelect">
-                <option value="ALL">All Months</option>
-            </select>
             <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
         </div>
 
@@ -627,10 +631,6 @@
     <!-- ===== Monthly Chart panel ===== -->
     <div class="panel" id="panel-compare">
         <div class="compare-wrap">
-            <div class="compare-pick">
-                <label for="monthPicker" style="font-size:0.85rem;color:var(--c-bar-label);font-weight:600;">Select month:</label>
-                <select id="monthPicker"></select>
-            </div>
             <div id="monthChartCard"></div>
         </div>
         <div class="note-box">
@@ -1028,6 +1028,7 @@ function applyFilters() {
         filtered.length === yearScoped.length ? `Showing all ${yearScoped.length} days` : `Showing ${filtered.length} of ${yearScoped.length} days`;
     document.getElementById('noResults').style.display = filtered.length === 0 ? 'block' : 'none';
     renderPeriodLabel();
+    renderMonthChart(); // chart always shows the same period as the cards
 }
 
 // Says exactly which period/filters the cards and Supply mix cover; blue when narrowed
@@ -1081,20 +1082,6 @@ function aggregateMonth(year, month) { // month: 1-12
 }
 
 function monthLabel(year, month) { return MONTH_NAMES[month - 1] + ' ' + year; }
-
-function populateMonthPicker() {
-    const keys = [...new Set(RECORDS.map(r => monthKey(r.date)))].sort();
-    const sel = document.getElementById('monthPicker');
-    sel.innerHTML = '';
-    keys.forEach(k => {
-        const [y, m] = k.split('-').map(Number);
-        const opt = document.createElement('option');
-        opt.value = k;
-        opt.textContent = monthLabel(y, m);
-        sel.appendChild(opt);
-    });
-    if (keys.length) sel.value = keys[keys.length - 1];
-}
 
 // Per-day breakdown for one calendar month, for the stacked bar chart.
 // Mirrors aggregateMonth's exclusion rules (pool-water days drop rainwater, flagged days drop KWA)
@@ -1200,25 +1187,130 @@ function renderMonthInsight(y, m, agg, days) {
 }
 
 function renderMonthChart() {
-    const sel = document.getElementById('monthPicker');
     const card = document.getElementById('monthChartCard');
-    if (!sel.value) { card.innerHTML = '<div class="no-data-note">No data loaded yet.</div>'; return; }
-    const [y, m] = sel.value.split('-').map(Number);
-    const agg = aggregateMonth(y, m);
-    if (!agg) { card.innerHTML = '<div class="no-data-note">No data in range</div>'; return; }
-    const days = buildDailySeries(y, m);
-    const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
-
-    card.innerHTML = `
-        <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
-        <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
+    if (!RECORDS.length) { card.innerHTML = '<div class="no-data-note">No data loaded yet.</div>'; return; }
+    const month = document.getElementById('monthSelect').value;
+    const q = document.getElementById('searchBox').value.trim();
+    const flaggedOnly = document.getElementById('anomalyOnly').checked;
+    const filterNote = (q || flaggedOnly)
+        ? `<div class="chart-filter-note">The ${[q ? 'search' : '', flaggedOnly ? '“Flagged entries only”' : ''].filter(Boolean).join(' and ')} filter applies to the Daily Log table and the cards above — this chart always shows every entry for the period.</div>`
+        : '';
+    const legend = `
         <div class="chart-legend">
             <span><span class="sw tanker"></span>Tanker</span>
             <span><span class="sw kwa"></span>KWA</span>
             <span><span class="sw rain"></span>Rainwater</span>
+        </div>`;
+
+    if (currentYear !== 'ALL' && month !== 'ALL') {
+        // One month: daily bars (unchanged)
+        const y = Number(currentYear), m = Number(month);
+        const agg = aggregateMonth(y, m);
+        if (!agg) { card.innerHTML = filterNote + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
+        const days = buildDailySeries(y, m);
+        const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
+        card.innerHTML = filterNote + `
+            <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
+            <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
+            ${legend}
+            ${buildMonthChartSvg(days)}
+            ${renderMonthInsight(y, m, agg, days)}`;
+        return;
+    }
+
+    // Whole year, or all years combined: one bar per month
+    let months = [];
+    if (currentYear !== 'ALL') {
+        for (let m = 1; m <= 12; m++) months.push({ y: Number(currentYear), m });
+    } else {
+        const keys = [...new Set(RECORDS.map(r => monthKey(r.date)))].sort();
+        let [y, m] = keys[0].split('-').map(Number);
+        const [y2, m2] = keys[keys.length - 1].split('-').map(Number);
+        while (y < y2 || (y === y2 && m <= m2)) { months.push({ y, m }); m++; if (m > 12) { m = 1; y++; } }
+    }
+    const series = months.map(({ y, m }) => {
+        const a = aggregateMonth(y, m);
+        return a
+            ? { y, m, logged: true, partial: a.isPartial, daysLogged: a.daysLogged, daysInMonth: a.daysInMonth, tankerLoads: a.tankerLoads, tankerL: a.nominalTankerL, kwaL: a.kwaL, rainL: a.rainL, total: a.nominalTankerL + a.kwaL + a.rainL }
+            : { y, m, logged: false, tankerL: 0, kwaL: 0, rainL: 0, total: 0 };
+    });
+    const title = currentYear === 'ALL' ? `${yearRangeLabel()} combined` : currentYear;
+    const anyPartial = series.some(s => s.logged && s.partial);
+    card.innerHTML = filterNote + `
+        <div class="chart-title">${title} · Water Supply by Month</div>
+        <div class="chart-sub">Tanker + KWA + Rainwater, per month · number above each bar = that month's total in KL · <b>tap a bar</b> to see that month day by day${anyPartial ? ' · * = month not fully logged' : ''}</div>
+        ${legend}
+        ${buildPeriodChartSvg(series, currentYear === 'ALL')}
+        ${renderPeriodInsight(title, series)}`;
+}
+
+function buildPeriodChartSvg(series, showYear) {
+    const W = 900, H = 380;
+    const marginL = 72, marginR = 16, marginT = 28, marginB = 36;
+    const plotW = W - marginL - marginR, plotH = H - marginT - marginB;
+    const n = series.length;
+    const maxKl = Math.max(1, ...series.map(s => s.total / 1000));
+    const niceMax = niceAxisMax(maxKl * 1.2); // axis in KL so the numbers stay short on phones
+    let gridlines = '';
+    for (let i = 0; i <= 4; i++) {
+        const val = niceMax / 4 * i, y = marginT + plotH - (val / niceMax * plotH);
+        gridlines += `<line x1="${marginL}" y1="${y}" x2="${W - marginR}" y2="${y}" style="stroke:var(--c-grid)" stroke-width="1"/>`;
+        gridlines += `<text x="${marginL - 8}" y="${y + 3}" class="ax-y" style="fill:var(--c-axis-text)" text-anchor="end">${fmt(Math.round(val))}${i === 4 ? ' KL' : ''}</text>`;
+    }
+    const slotW = plotW / n, barW = Math.max(4, Math.min(48, slotW - 8));
+    const stride = n > 12 ? 2 : 1; // combined view: label every other month so text doesn't collide
+    let bars = '';
+    series.forEach((s, i) => {
+        const cx = marginL + i * slotW + slotW / 2, x = cx - barW / 2;
+        let yCursor = marginT + plotH, segs = '';
+        [
+            { v: s.tankerL, color: 'var(--c-tanker)', label: 'Tanker' },
+            { v: s.kwaL, color: 'var(--c-kwa)', label: 'KWA' },
+            { v: s.rainL, color: 'var(--c-rain)', label: 'Rainwater' }
+        ].forEach(seg => {
+            if (seg.v <= 0) return;
+            const h = (seg.v / 1000 / niceMax) * plotH;
+            yCursor -= h;
+            segs += `<rect x="${x.toFixed(1)}" y="${yCursor.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" style="fill:${seg.color};stroke:var(--c-seg-gap);stroke-width:0.75"><title>${monthLabel(s.y, s.m)} — ${seg.label}: ${fmt(seg.v)} L</title></rect>`;
+        });
+        const showLbl = i % stride === 0 || i === n - 1;
+        if (s.total > 0 && showLbl) {
+            segs += `<text x="${cx.toFixed(1)}" y="${(yCursor - 4).toFixed(1)}" class="bar-kl" style="fill:var(--c-bar-label)" text-anchor="middle">${fmt(Math.round(s.total / 1000))}${s.partial ? '*' : ''}</text>`;
+        }
+        // Whole slot is tappable (easier on phones than the bar itself)
+        const hit = s.logged ? `<rect x="${(marginL + i * slotW).toFixed(1)}" y="${marginT}" width="${slotW.toFixed(1)}" height="${plotH + 20}" fill="transparent" style="cursor:pointer"><title>${monthLabel(s.y, s.m)}: ${fmt(s.total)} L — tap to see each day</title></rect>` : '';
+        bars += `<g ${s.logged ? `data-ym="${s.y}-${String(s.m).padStart(2, '0')}" class="month-bar"` : ''}>${segs}${hit}</g>`;
+        if (showLbl) {
+            const lbl = MONTH_NAMES[s.m - 1] + (showYear ? ' ' + String(s.y).slice(2) : '');
+            bars += `<text x="${cx.toFixed(1)}" y="${(marginT + plotH + 14).toFixed(1)}" class="ax-x" style="fill:var(--c-day)" text-anchor="middle">${lbl}</text>`;
+        }
+    });
+    return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" style="min-width:600px;width:100%;height:auto;">
+        ${gridlines}
+        ${bars}
+        <line x1="${marginL}" y1="${marginT + plotH}" x2="${W - marginR}" y2="${marginT + plotH}" style="stroke:var(--c-axis)" stroke-width="1"/>
+    </svg></div>`;
+}
+
+function renderPeriodInsight(title, series) {
+    const logged = series.filter(s => s.logged);
+    if (!logged.length) return '';
+    const t = logged.reduce((a, s) => ({ tankerL: a.tankerL + s.tankerL, kwaL: a.kwaL + s.kwaL, rainL: a.rainL + s.rainL, loads: a.loads + s.tankerLoads, days: a.days + s.daysLogged }), { tankerL: 0, kwaL: 0, rainL: 0, loads: 0, days: 0 });
+    const total = t.tankerL + t.kwaL + t.rainL;
+    const pct = v => total > 0 ? (v / total * 100).toFixed(0) : '0';
+    const full = logged.filter(s => !s.partial);
+    const pool = full.length ? full : logged; // busiest/quietest judged on fully-logged months so a half-logged month isn't called "quietest"
+    const hi = pool.reduce((a, s) => s.total > a.total ? s : a);
+    const lo = pool.reduce((a, s) => s.total < a.total ? s : a);
+    return `
+        <div class="insight-box">
+            ★ <strong>${title}:</strong> ${fmt(total)} L total across ${t.days} logged days
+            — Tanker ${pct(t.tankerL)}% (${fmt(t.tankerL)} L, ${t.loads} loads),
+            KWA ${pct(t.kwaL)}% (${fmt(t.kwaL)} L),
+            Rainwater ${pct(t.rainL)}% (${fmt(t.rainL)} L).
+            ${pool.length > 1 ? ` Highest month: ${monthLabel(hi.y, hi.m)} (${fmt(hi.total)} L). Lowest: ${monthLabel(lo.y, lo.m)} (${fmt(lo.total)} L)${full.length ? ' — fully logged months only' : ''}.` : ''}
         </div>
-        ${buildMonthChartSvg(days)}
-        ${renderMonthInsight(y, m, agg, days)}`;
+        <div class="chart-footer-note">Same totals as the cards above. Recomputed live from the same dataset as the Daily Log tab.</div>`;
 }
 
 // ---------- Tabs ----------
@@ -1242,9 +1334,7 @@ function setLiveStatus(text, cls) {
 function refreshUI() {
     populateMonthSelect();
     populateYearTabs();
-    applyFilters();
-    populateMonthPicker();
-    renderMonthChart();
+    applyFilters(); // also redraws the chart for the same period
 }
 
 let liveRefreshInFlight = false;
@@ -1296,7 +1386,15 @@ function debounce(fn, delayMs) {
 document.getElementById('searchBox').addEventListener('input', debounce(applyFilters, 180));
 document.getElementById('monthSelect').addEventListener('change', applyFilters);
 document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
-document.getElementById('monthPicker').addEventListener('change', renderMonthChart);
+// Tap a month's bar in the by-month chart to open that month's daily chart
+document.getElementById('monthChartCard').addEventListener('click', e => {
+    const g = e.target.closest('[data-ym]');
+    if (!g) return;
+    const [y, m] = g.dataset.ym.split('-');
+    if (currentYear !== y) { currentYear = y; populateYearTabs(); }
+    document.getElementById('monthSelect').value = m;
+    applyFilters();
+});
 // Theme switch: show the saved choice, save a new one on tap
 (function () {
     const sw = document.getElementById('themeSwitch');
