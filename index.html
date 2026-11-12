@@ -4,13 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-// Dark mode: follow the phone/computer setting automatically (and switch live if it changes).
-// Runs in <head> so the page never flashes white before going dark.
+// Theme: "auto" follows the phone/computer setting (default). A viewer can pick Light or Dark
+// with the switch in the header; that choice is saved on their own device only (localStorage).
+// Runs in <head> so the page never flashes the wrong colours before the saved choice applies.
 (function () {
+    var KEY = 'sfsTheme';
     var mq = window.matchMedia('(prefers-color-scheme: dark)');
-    function applyTheme() { document.documentElement.classList.toggle('dark', mq.matches); }
-    if (mq.addEventListener) mq.addEventListener('change', applyTheme); else if (mq.addListener) mq.addListener(applyTheme);
-    applyTheme();
+    function readPref() { try { var v = localStorage.getItem(KEY); return v === 'light' || v === 'dark' ? v : 'auto'; } catch (e) { return 'auto'; } }
+    window.themePref = readPref();
+    window.applyTheme = function () {
+        var dark = window.themePref === 'auto' ? mq.matches : window.themePref === 'dark';
+        document.documentElement.classList.toggle('dark', dark);
+    };
+    window.setThemePref = function (p) {
+        window.themePref = p;
+        try { if (p === 'auto') localStorage.removeItem(KEY); else localStorage.setItem(KEY, p); } catch (e) { /* private mode: works for this visit only */ }
+        window.applyTheme();
+    };
+    if (mq.addEventListener) mq.addEventListener('change', window.applyTheme); else if (mq.addListener) mq.addListener(window.applyTheme);
+    window.applyTheme();
 })();
 </script>
 <title>SD Water Supply Dashboard (Secure)</title>
@@ -81,6 +93,20 @@
     .refresh-btn:disabled { opacity: 0.6; cursor: default; }
     .refresh-btn .spin { display: inline-block; }
     .refresh-btn.spinning .spin { animation: spin 0.8s linear infinite; }
+    /* Light / Auto / Dark switch in the header (choice saved on this device only) */
+    .theme-switch {
+        margin-top: 10px; margin-left: 8px; display: inline-flex; vertical-align: top;
+        border: 1px solid rgba(255,255,255,0.4); border-radius: 12px; overflow: hidden; background: rgba(15,23,42,0.18); /* slightly darker than the header so white labels stay readable on the light end of the gradient */
+    }
+    .theme-switch button {
+        display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; color: #fff;
+        font-size: 0.72rem; padding: 4px 10px; cursor: pointer; letter-spacing: 0.2px; min-height: 26px;
+    }
+    .theme-switch button + button { border-left: 1px solid rgba(255,255,255,0.25); }
+    .theme-switch button svg { width: 12px; height: 12px; flex: 0 0 auto; }
+    .theme-switch button:hover { background: rgba(255,255,255,0.18); }
+    .theme-switch button[aria-checked="true"] { background: rgba(255,255,255,0.95); color: #1e3a8a; font-weight: 700; }
+    html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
@@ -516,6 +542,14 @@
     <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data via the Apps Script Web App">
         <span class="spin">⟳</span> <span id="refreshBtnLabel">Refresh</span>
     </button>
+    <div class="theme-switch" id="themeSwitch" role="radiogroup" aria-label="Colour theme">
+        <button type="button" role="radio" data-theme="light" title="Always light">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M3.2 12.8l1.1-1.1M11.7 4.3l1.1-1.1"/></g></svg>Light</button>
+        <button type="button" role="radio" data-theme="auto" title="Follow this phone or computer's setting">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg>Auto</button>
+        <button type="button" role="radio" data-theme="dark" title="Always dark">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 10.2A5.8 5.8 0 0 1 5.8 2.5a5.8 5.8 0 1 0 7.7 7.7z" fill="currentColor"/></svg>Dark</button>
+    </div>
 </header>
 
 <div class="wrap">
@@ -1263,6 +1297,13 @@ document.getElementById('searchBox').addEventListener('input', debounce(applyFil
 document.getElementById('monthSelect').addEventListener('change', applyFilters);
 document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
 document.getElementById('monthPicker').addEventListener('change', renderMonthChart);
+// Theme switch: show the saved choice, save a new one on tap
+(function () {
+    const sw = document.getElementById('themeSwitch');
+    const mark = () => sw.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.theme === window.themePref)));
+    sw.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; window.setThemePref(b.dataset.theme); mark(); });
+    mark();
+})();
 document.getElementById('refreshBtn').addEventListener('click', refreshLiveData);
 document.querySelector('.stat-card.anomaly').addEventListener('click', openFlagModal);
 document.getElementById('flagModalClose').addEventListener('click', closeFlagModal);
