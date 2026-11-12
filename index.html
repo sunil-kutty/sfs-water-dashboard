@@ -6,9 +6,9 @@
 <title>SD Water Supply Dashboard (Secure)</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%232563eb' d='M16 2c-5 8-10 13.5-10 19a10 10 0 0020 0c0-5.5-5-11-10-19z'/%3E%3C/svg%3E">
-<meta name="description" content="Live daily water supply tracker for SD — Tanker, Rainwater &amp; KWA figures for 2025–2026, sourced from the society's Google Sheet.">
+<meta name="description" content="Live daily water supply tracker for SD — Tanker, Rainwater &amp; KWA figures from 2025 onward, sourced from the society's Google Sheet.">
 <meta property="og:title" content="SD Water Supply Dashboard">
-<meta property="og:description" content="Live daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025–2026.">
+<meta property="og:description" content="Live daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025 onward.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sunil-kutty.github.io/sfs-water-dashboard/">
 <style>
@@ -386,7 +386,7 @@
 
 <header>
     <h1>SD Water Supply Dashboard <span class="beta-badge" title="Still being refined — layout, wording and features may change">BETA</span></h1>
-    <p>Daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025–2026</p>
+    <p>Daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025 onward</p>
     <div class="live-status" id="liveStatus">Loading live data…</div>
     <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data via the Apps Script Web App">
         <span class="spin">⟳</span> <span id="refreshBtnLabel">Refresh</span>
@@ -469,7 +469,7 @@
             <div id="monthChartCard"></div>
         </div>
         <div class="note-box">
-            Covers only this tool's 2025–2026 dataset. Tanker figures use nominal volume (loads × 12,000 L) —
+            Covers only this tool's dataset (2025 onward). Tanker figures use nominal volume (loads × 12,000 L) —
             the sheet's "Actuals" column has a recurring glitch and isn't summed.
             Rainwater and KWA figures exclude flagged/anomalous days (see Daily Log tab); the excluded-day count,
             if any, is shown below the chart.
@@ -490,7 +490,7 @@
 
 <footer>
     <span class="confidential">Confidential — Internal use by SD Association only.</span>
-    Data syncs live from the Water Consumption History sheet (a live mirror of the SD Drive sheet) · Covers 2025–2026 · Read-only — nothing is edited from here.
+    Data syncs live from the Water Consumption History sheet (a live mirror of the SD Drive sheet) · Covers 2025 onward · Read-only — nothing is edited from here.
 </footer>
 
 <script>
@@ -499,7 +499,7 @@
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbysfLekap8COYp7irKgfCsCt6MZvyWQQy9-U_YUuZkFjY5-vjoQBFszrAoA0RuVpOh-/exec';
 
 const LIVE_FETCH_TIMEOUT_MS = 20000; // Apps Script Web App responses are slower than a direct Sheets call (cold starts + redirect hop); 8s was too tight and caused spurious "could not load" errors.
-const YEARS_IN_SCOPE = [2025, 2026];
+const MIN_YEAR_IN_SCOPE = 2025; // keep every year from 2025 onward (matches the Apps Script's MIN_YEAR) — no upper limit, so 2027+ rows show up automatically
 const TANKER_LOAD_L = 12000;
 const ACTUALS_ANOMALY_ABS_L = 150000; // anything beyond this (or negative) is a known formula artifact, not real volume
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -765,6 +765,13 @@ function populateMonthSelect() {
     });
 }
 
+function yearRangeLabel() { // e.g. '2025–2026', '2025–2027' — built from the loaded data, never hard-coded
+    if (!RECORDS.length) return 'no data';
+    const years = RECORDS.map(r => r.date.getFullYear());
+    const lo = Math.min(...years), hi = Math.max(...years);
+    return lo === hi ? String(lo) : lo + '–' + hi;
+}
+
 function populateYearTabs() {
     const years = [...new Set(RECORDS.map(r => r.date.getFullYear()))].sort((a, b) => b - a);
     if (currentYear === null) currentYear = years.length ? String(years[0]) : 'ALL'; // default: most recent year present
@@ -772,7 +779,7 @@ function populateYearTabs() {
     const yearButtons = years.map(y =>
         `<button class="year-btn${String(y) === currentYear ? ' active' : ''}" data-year="${y}">${y}</button>`
     ).join('');
-    const allButton = `<button class="year-btn${currentYear === 'ALL' ? ' active' : ''}" data-year="ALL">All years</button>`;
+    const allButton = `<button class="year-btn${currentYear === 'ALL' ? ' active' : ''}" data-year="ALL" title="Totals for ${years.length > 1 ? years.slice().reverse().join(', ') + ' added together' : 'every year loaded'} (only years logged in the sheet from 2025 onward)">${years.length > 1 ? yearRangeLabel() + ' combined' : 'All loaded'}</button>`; // label built from the data so it never implies years that aren't loaded
     container.innerHTML = yearButtons + allButton;
     container.querySelectorAll('.year-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1016,11 +1023,11 @@ function refreshLiveData() {
     loadLiveSheetData()
         .then(resp => {
             const { records } = parseDailyData(resp);
-            RECORDS = records.filter(r => YEARS_IN_SCOPE.includes(r.date.getFullYear()));
+            RECORDS = records.filter(r => r.date.getFullYear() >= MIN_YEAR_IN_SCOPE);
             refreshUI();
             const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 .replace(/\b(am|pm)\b/i, m => m.toUpperCase());
-            setLiveStatus(`💧 Live data as of ${stamp} IST (${RECORDS.length} days total loaded, 2025–2026)`, 'live');
+            setLiveStatus(`💧 Live data as of ${stamp} IST (${RECORDS.length} days total loaded, ${yearRangeLabel()})`, 'live');
         })
         .catch(err => {
             console.warn('Water supply sheet fetch failed.', err);
