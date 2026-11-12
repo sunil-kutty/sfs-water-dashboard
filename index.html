@@ -428,6 +428,7 @@
         border-radius: 10px;
         padding: 10px 14px;
     }
+    .caveat-count { font-weight: 600; }
     .flag-modal-overlay {
         display: none;
         position: fixed;
@@ -592,7 +593,7 @@
         <div class="stat-card"><div class="num" id="statTanker">0</div><div class="label">Tanker Loads (Total)</div></div>
         <div class="stat-card"><div class="num" id="statRain">0</div><div class="label">Rainwater (L)</div></div>
         <div class="stat-card"><div class="num" id="statKwa">0</div><div class="label">KWA Water (L)</div></div>
-        <div class="stat-card anomaly" title="Rows with an excluded formula-glitch value (Tanker Actuals or negative KWA), a pool-water mislog, or a raw-litre rainwater unit note — not all of these show a red ⚠ in the log, see caveats below"><div class="num" id="statAnomaly">0</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
+        <div class="stat-card anomaly" title="Days where one value in the source sheet looked wrong. A flagged day is still counted — only the wrong value is handled: a broken Tanker Actuals reading is ignored (tankers are counted as loads × 12,000 L), pool water entered as Rainwater is left out, a negative KWA reading is left out, and Rainwater typed in litres is counted as litres. Tap to see each day."><div class="num" id="statAnomaly">0</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
         <div class="stat-card mix" id="mixCard" title="Share of total water supplied in the period shown — same totals as the cards (Tanker = loads × 12,000 L)">
             <svg class="mix-donut" id="mixDonut" viewBox="0 0 42 42" aria-hidden="true"></svg>
             <div class="mix-legend" id="mixLegend"></div>
@@ -617,7 +618,7 @@
             <span>Tanker (nominal = loads × 12,000 L)</span>
             <span>Rainwater received that day (L)</span>
             <span>KWA 1 / KWA 2 — cumulative meter reading (KL)</span>
-            <span><span class="badge warn">⚠</span> Source-sheet anomaly — excluded from totals &amp; comparisons</span>
+            <span><span class="badge warn">⚠</span> A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</span>
         </div>
 
         <div class="flag-modal-overlay" id="flagModalOverlay">
@@ -654,18 +655,19 @@
         </div>
         <div class="note-box">
             Covers only this tool's dataset (2025 onward). Tanker figures use nominal volume (loads × 12,000 L) —
-            the sheet's "Actuals" column has a recurring glitch and isn't summed.
-            Rainwater and KWA figures exclude flagged/anomalous days (see Daily Log tab); the excluded-day count,
-            if any, is shown below the chart.
+            the sheet's "Actuals" column has a recurring glitch and isn't used.
+            Flagged days are still counted. Only two kinds of value are left out: pool water entered in the Rainwater
+            column, and a negative KWA reading — when a month has any, the number of days is shown below its daily chart.
         </div>
     </div>
 
     <div class="note-box">
-        <strong>Known data caveats in the source sheet, as on 16 Oct 2026 (flagged, not hidden):</strong>
+        <strong>Known data issues in the source sheet (flagged, not hidden — flagged days are still counted):</strong>
         <ul style="margin:6px 0 0 18px; padding:0;">
-            <li>"Tanker Water Actuals" shows broken placeholder values (huge negative/positive numbers) near missing meter readings — excluded from totals (nominal = loads × 12,000 L used instead); flagged rows show ⚠.</li>
-            <li>The "Rainwater" column switched units partway through — most entries are counts of 12,000 L equivalents, but from early Sep 2026 onward it's raw litres; auto-detected (≤10 ⇒ equivalents, &gt;10 ⇒ litres) and flagged.</li>
-            <li>A few days have "pool water" mistakenly logged in Rainwater (per the sheet's own remarks) — excluded from totals.</li>
+            <li>"Tanker Water Actuals" sometimes shows broken values (huge negative/positive numbers) near missing meter readings. That column is never used — tankers are always counted as loads × 12,000 L — so the day is counted as normal; ⚠ marks it.<span class="caveat-count" id="cvActuals"></span></li>
+            <li>The "Rainwater" column switched units partway through — most entries are counts of 12,000 L loads, but from early Sep 2026 onward it's plain litres. Detected automatically (≤10 ⇒ loads, &gt;10 ⇒ litres) and counted correctly either way; marked "raw-L format".<span class="caveat-count" id="cvRawL"></span></li>
+            <li>A few days have "pool water" logged in the Rainwater column by mistake (per the sheet's own remarks). That day's rainwater figure is left out; the rest of the day is counted.<span class="caveat-count" id="cvPool"></span></li>
+            <li id="cvKwaItem" hidden>A negative "KWA Water Received" value (a meter-formula error) is left out of the KWA total; the rest of the day is counted.<span class="caveat-count" id="cvKwa"></span></li>
             <li>KWA 1 / KWA 2 are raw cumulative meter readings (KL) as recorded — the daily "KWA Water Received" total isn't split back into a KWA1 vs KWA2 share.</li>
         </ul>
     </div>
@@ -931,11 +933,11 @@ function closeFlagModal() {
 function noteCell(r) {
     const parts = [];
     // Uses 🔧 (not ⚠) deliberately — a leak report is operational info, not a data-quality
-    // anomaly. ⚠ is reserved for the "Source-sheet anomaly — excluded from totals" meaning
+    // anomaly. ⚠ is reserved for "a source-sheet value looked wrong" (the day is still counted)
     // (see the badge warn spans below) so the two concepts don't visually collide.
     if (r.leak) parts.push(`<span class="leak-tag">🔧 ${escapeHtml(r.leak)}</span>`);
     if (r.remarks) parts.push(`<span class="remark-tag">${escapeHtml(r.remarks)}</span>`);
-    if (r.isPoolWater) parts.push(`<span class="badge warn" title="Logged in the Rainwater column by mistake per the sheet's own remark — excluded from rainwater totals">Pool water — excluded</span>`);
+    if (r.isPoolWater) parts.push(`<span class="badge warn" title="Pool water was logged in the Rainwater column by mistake (per the sheet's own remark) — this rainwater figure is left out; the rest of the day is counted">Pool water — not counted as rain</span>`);
     if (r.rainwaterUnitRaw) parts.push(`<span class="badge info" title="This row's Rainwater value is already in litres (source format switched from equivalents partway through 2026)">raw-L format</span>`);
     return parts.join('<br>') || '<span style="color:var(--c-dash)">—</span>';
 }
@@ -947,7 +949,7 @@ function renderRow(r) {
         ? `${fmt(r.nominalTankerL)} <span class="badge warn" title="Source 'Tanker Water Actuals' for this day is a meter-formula artifact (${fmt(r.actualsL)} L) — nominal (loads × 12,000 L) shown instead and used in totals">⚠</span>`
         : fmt(r.nominalTankerL);
     const kwaCell = r.kwaFlag
-        ? `${fmt(r.kwaTotalL)} <span class="badge warn" title="Negative value — source meter-formula artifact, excluded from totals">⚠</span>`
+        ? `${fmt(r.kwaTotalL)} <span class="badge warn" title="Negative value — source meter-formula error; this KWA figure is left out of the KWA total (the rest of the day is counted)">⚠</span>`
         : fmt(r.kwaTotalL);
     return `
         <tr class="${rowAnomaly ? 'anomaly-row' : ''}">
@@ -1189,8 +1191,8 @@ function renderMonthInsight(y, m, agg, days) {
     const peak = days.reduce((best, d) => (!best || d.total > best.total) ? d : best, null);
 
     const excludedNotes = [];
-    if (agg.rainExcluded) excludedNotes.push(`${agg.rainExcluded} day(s) rainwater excluded (pool-water remark)`);
-    if (agg.kwaExcluded) excludedNotes.push(`${agg.kwaExcluded} day(s) KWA excluded (negative-meter anomaly)`);
+    if (agg.rainExcluded) excludedNotes.push(`Rainwater left out on ${agg.rainExcluded} day(s) (pool water logged as rain)`);
+    if (agg.kwaExcluded) excludedNotes.push(`KWA left out on ${agg.kwaExcluded} day(s) (negative meter value)`);
 
     return `
         <div class="insight-box">
@@ -1201,7 +1203,7 @@ function renderMonthInsight(y, m, agg, days) {
             Rainwater ${pct(agg.rainL).toFixed(0)}% (${fmt(agg.rainL)} L).
             ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
         </div>
-        ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — see Daily Log tab.</div>` : ''}
+        ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — those days are otherwise counted; see Daily Log tab.</div>` : ''}
         <div class="chart-footer-note">Recomputed live from the same dataset as the Daily Log tab.</div>`;
 }
 
@@ -1355,7 +1357,20 @@ function setLiveStatus(text, cls) {
     el.className = 'live-status' + (cls ? ' ' + cls : '');
 }
 
+// Day counts in the "Known data issues" box, from all loaded data (2025 onward), so they never go out of date
+function renderCaveatCounts() {
+    const n = f => RECORDS.filter(f).length;
+    const txt = k => ` (${k} ${k === 1 ? 'day' : 'days'} so far)`;
+    document.getElementById('cvActuals').textContent = txt(n(r => r.actualsFlag));
+    document.getElementById('cvRawL').textContent = txt(n(r => r.rainwaterUnitRaw));
+    document.getElementById('cvPool').textContent = txt(n(r => r.isPoolWater));
+    const k = n(r => r.kwaFlag);
+    document.getElementById('cvKwa').textContent = txt(k);
+    document.getElementById('cvKwaItem').hidden = k === 0;
+}
+
 function refreshUI() {
+    renderCaveatCounts();
     populateMonthSelect();
     populateYearTabs();
     applyFilters(); // also redraws the chart for the same period
