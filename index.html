@@ -133,6 +133,26 @@
         flex-wrap: wrap;
     }
     .scope-label { font-size: 0.8rem; color: #4b5563; font-weight: 600; }
+    /* Period label above the cards + blue highlight on active filters */
+    .period-row { display: flex; justify-content: center; margin: 14px auto 0; padding: 0 4px; }
+    .period-label {
+        display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 4px 8px;
+        font-size: 0.85rem; color: #374151; background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 14px; padding: 6px 14px; text-align: center; /* rounded box, not a pill: stays tidy when it wraps on phones */
+    }
+    .period-label b { font-weight: 700; }
+    .period-label.filtered { background: #eff6ff; border-color: #2563eb; color: #1e3a8a; }
+    .period-label .clear-btn {
+        border: none; background: #2563eb; color: #fff; font-size: 0.72rem; font-weight: 600;
+        border-radius: 999px; padding: 3px 10px; cursor: pointer;
+    }
+    .period-label .clear-btn:hover { background: #1d4ed8; }
+    select.filter-on, #searchBox.filter-on, label.chk.filter-on {
+        border-color: #2563eb; background: #eff6ff; color: #1e3a8a; font-weight: 600;
+        box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+    }
+    #searchBox.filter-on { font-weight: 400; }
+    select:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; } /* typed text stays normal weight */
     .year-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
     .year-btn {
         padding: 6px 16px;
@@ -415,6 +435,8 @@
         <span class="scope-label">Showing data for:</span>
         <div class="year-tabs" id="yearTabs"></div>
     </div>
+
+    <div class="period-row"><div class="period-label" id="periodLabel" role="status" aria-live="polite"></div></div>
 
     <div class="stats">
         <div class="stat-card"><div class="num" id="statDays">0</div><div class="label">Days Logged</div></div>
@@ -860,6 +882,20 @@ function getFilteredRecords(base) {
 }
 
 function applyFilters() {
+    // Combined view = whole-period totals only. Adding the same month from different years
+    // (e.g. Sep 2025 + Sep 2026) hides the year-on-year change and mixes full and partial
+    // months, so the month dropdown is switched off until a single year is picked.
+    const monthSel = document.getElementById('monthSelect');
+    if (currentYear === 'ALL') {
+        monthSel.value = 'ALL';
+        monthSel.disabled = true;
+        monthSel.title = 'Pick a single year to look at one month';
+        monthSel.options[0].textContent = 'All Months (pick a year first)'; // visible on phones too, where hover tips don't show
+    } else {
+        monthSel.disabled = false;
+        monthSel.title = '';
+        monthSel.options[0].textContent = 'All Months';
+    }
     const yearScoped = currentYear === 'ALL' ? RECORDS : RECORDS.filter(r => r.date.getFullYear() === Number(currentYear));
     const filtered = getFilteredRecords(yearScoped);
     renderLogTable(filtered);
@@ -868,6 +904,35 @@ function applyFilters() {
     document.getElementById('resultCount').textContent =
         filtered.length === yearScoped.length ? `Showing all ${yearScoped.length} days` : `Showing ${filtered.length} of ${yearScoped.length} days`;
     document.getElementById('noResults').style.display = filtered.length === 0 ? 'block' : 'none';
+    renderPeriodLabel();
+}
+
+// Says exactly which period/filters the cards and Supply mix cover; blue when narrowed
+function renderPeriodLabel() {
+    const FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const sel = document.getElementById('monthSelect');
+    const sb = document.getElementById('searchBox');
+    const chk = document.getElementById('anomalyOnly');
+    const month = sel.value, q = sb.value.trim(), flaggedOnly = chk.checked;
+    const range = yearRangeLabel();
+    const yearTxt = currentYear === 'ALL' ? (range.includes('–') ? `${range} combined` : 'All loaded years') : currentYear;
+    const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    let main;
+    if (month === 'ALL') main = `<b>${yearTxt}</b> · All months`;
+    else main = currentYear === 'ALL' ? `<b>${FULL[+month - 1]}</b> (${yearTxt})` : `<b>${FULL[+month - 1]} ${yearTxt}</b>`;
+    const extras = [];
+    if (flaggedOnly) extras.push('Flagged entries only');
+    if (q) extras.push(`Search: “${esc(q)}”`);
+    const narrowed = month !== 'ALL' || flaggedOnly || !!q;
+    const el = document.getElementById('periodLabel');
+    el.classList.toggle('filtered', narrowed);
+    el.innerHTML = `<span>Totals for: ${main}${extras.map(x => ' · ' + x).join('')}</span>`
+        + (narrowed ? `<button type="button" class="clear-btn" id="clearFilters" title="Back to all months, no search, all entries">✕ Clear</button>` : '');
+    sel.classList.toggle('filter-on', month !== 'ALL');
+    sb.classList.toggle('filter-on', !!q);
+    chk.closest('label').classList.toggle('filter-on', flaggedOnly);
+    const btn = document.getElementById('clearFilters');
+    if (btn) btn.addEventListener('click', () => { sel.value = 'ALL'; sb.value = ''; chk.checked = false; applyFilters(); });
 }
 
 // ---------- Month comparison ----------
