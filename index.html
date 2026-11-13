@@ -408,6 +408,9 @@
     .bar-pop-go:hover { background: #1d4ed8; }
     html.dark .bar-pop { background: #243145; color: #e2e8f0; border-color: #475569; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
     html.dark .bar-pop-sub, html.dark .bar-pop-close { color: #94a3b8; }
+    .pending-note { max-width: 760px; margin: 10px auto 0; padding: 8px 12px; border-radius: 8px; background: #fef3c7; color: #92400e; font-size: 0.82rem; line-height: 1.4; text-align: center; }
+    .badge.pending { background: #fef3c7; color: #92400e; cursor: help; }
+    .tankers-missing { color: #92400e; font-weight: 600; }
     .partial-badge { display:inline-block; margin-top:4px; font-size:0.65rem; background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:7px; }
     .no-data-note { font-size: 0.78rem; color: #9ca3af; font-style: italic; padding: 20px 0; text-align: center; }
 
@@ -651,6 +654,8 @@
     html.dark .leak-tag { color: #f87171; }
     html.dark #noResults, html.dark .no-data-note, html.dark .chart-footer-note, html.dark footer { color: #8b9ab0; }
     html.dark footer .confidential { color: #94a3b8; }
+    html.dark .pending-note, html.dark .badge.pending { background: rgba(245,158,11,0.18); color: #fcd34d; }
+    html.dark .tankers-missing { color: #fcd34d; }
     html.dark .partial-badge { background: rgba(245,158,11,0.18); color: #fcd34d; }
     html.dark .chart-title { color: #f1f5f9; }
     html.dark .insight-box { background: #172554; border-color: #1e40af; color: #bfdbfe; }
@@ -704,6 +709,8 @@
             <div class="mix-legend" id="mixLegend"><div class="mix-title">Supply mix</div><div>Loading…</div></div>
         </div>
     </div>
+
+    <div class="pending-note" id="pendingNote" role="note" hidden></div>
 
     <div class="tabs">
         <button class="tab-btn active" data-tab="log"><span class="cal-icon"><span class="cal-icon-top"></span><span class="cal-icon-num" id="calIconNum"></span></span> Daily Log</button>
@@ -871,6 +878,9 @@ function parseDateCell(v) {
     return isNaN(d.getTime()) ? null : d;
 }
 
+// Today's date in India as a number like 20261113 (the sheet is kept in IST, whatever the viewer's clock)
+const TODAY_IST_KEY = Number(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).replace(/-/g, ''));
+
 // ---------- Parse the Daily Data tab ----------
 // Source columns (fixed position, 0-indexed): 0 Date, 1 No. of Tankers, 2 Tanker Water
 // Meter Reading, 3 Tanker Water Actuals, 4 Rainwater (12,000 L Equiv.), 5 KWA 1 Meter
@@ -896,7 +906,18 @@ function parseDailyData(resp) {
 
         const tankersCell = c(1);
         const tankersCellBlank = tankersCell == null || tankersCell === '';
-        if (tankersCellBlank) continue; // not yet logged — Date auto-fills via sheet formula even on un-entered future rows
+        // Blank tanker count: normally "not logged yet" (the sheet fills in Dates for future days too).
+        // But if the day is today or earlier and someone typed a KWA meter reading or rainwater, the day
+        // is partly entered: show it, count its KWA/rainwater, and leave tanker loads out until entered.
+        // Only typed cells count here: the Actuals and KWA Received columns are formulas that show
+        // numbers on future days too.
+        const typed = (idx) => { const v = c(idx); return v != null && String(v).trim() !== ''; };
+        let tankersMissing = false;
+        if (tankersCellBlank) {
+            const dKey = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+            if (dKey > TODAY_IST_KEY || !(typed(4) || typed(5) || typed(6))) continue; // not logged yet
+            tankersMissing = true;
+        }
 
         const tankersRaw = cellNum(c(1));
         const tankers = isNaN(tankersRaw) ? 0 : tankersRaw;
@@ -905,7 +926,7 @@ function parseDailyData(resp) {
         const actualsRaw = cellNum(c(3));
         let actualsL = isNaN(actualsRaw) ? null : actualsRaw;
         let actualsFlag = false;
-        if (actualsL != null && (actualsL < 0 || actualsL > ACTUALS_ANOMALY_ABS_L)) {
+        if (!tankersMissing && actualsL != null && (actualsL < 0 || actualsL > ACTUALS_ANOMALY_ABS_L)) {
             actualsFlag = true;
             anomalies.tankerActuals++;
         }
@@ -939,7 +960,7 @@ function parseDailyData(resp) {
         }
 
         records.push({
-            date, tankers, nominalTankerL,
+            date, tankers, nominalTankerL, tankersMissing,
             actualsL, actualsFlag,
             rainwaterRaw: isNaN(rainwaterRaw) ? 0 : rainwaterRaw, rainwaterL, rainwaterUnitRaw,
             isPoolWater,
@@ -968,7 +989,22 @@ function renderStats(records) {
     document.getElementById('statRain').textContent = fmt(rainL);
     document.getElementById('statKwa').textContent = fmt(kwaL);
     document.getElementById('statAnomaly').textContent = anomalyCount;
+    renderPendingNote(records);
     renderMixDonut(tankerLoads * TANKER_LOAD_L, kwaL, rainL);
+}
+
+// Days whose tanker count is not in the sheet yet: say so under the cards (goes away once it is entered)
+function renderPendingNote(records) {
+    const el = document.getElementById('pendingNote');
+    if (!el) return;
+    const pend = records.filter(r => r.tankersMissing).sort((a, b) => a.date - b.date);
+    if (!pend.length) { el.hidden = true; el.textContent = ''; return; }
+    const names = pend.map(r => r.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+    const list = names.length > 3 ? names.slice(0, 3).join(', ') + ` and ${names.length - 3} more` : names.join(', ');
+    el.textContent = pend.length === 1
+        ? `${list}: tanker count not entered in the sheet yet. Its KWA and rainwater are counted; its tanker loads will be added once entered.`
+        : `${list}: tanker counts not entered in the sheet yet. Their KWA and rainwater are counted; their tanker loads will be added once entered.`;
+    el.hidden = false;
 }
 
 // Donut of Tanker / KWA / Rainwater share, built from the exact same totals as the cards above
@@ -1054,6 +1090,7 @@ function noteTagTexts(r) {
     if (r.isPoolWater) t.push('⚠ Pool water — not counted as rain');
     if (r.kwaFlag) t.push('⚠ KWA value left out');
     if (r.rainwaterUnitRaw) t.push('raw-L format');
+    if (r.tankersMissing) t.push('Tanker count not entered yet');
     return t;
 }
 
@@ -1062,6 +1099,7 @@ function noteCell(r) {
     // Uses 🔧 (not ⚠) deliberately — a leak report is operational info, not a data-quality
     // anomaly. ⚠ is reserved for "a source-sheet value looked wrong" (the day is still counted)
     // (see the badge warn spans below) so the two concepts don't visually collide.
+    if (r.tankersMissing) parts.push(`<span class="badge pending" title="The No. of Tankers cell for this day is still empty in the sheet. KWA and rainwater for this day are counted; tanker loads will be added automatically once the count is entered.">Tanker count not entered yet</span>`);
     if (r.leak) parts.push(`<span class="leak-tag">🔧 ${escapeHtml(r.leak)}</span>`);
     if (r.remarks) parts.push(`<span class="remark-tag">${escapeHtml(r.remarks)}</span>`);
     // Every flagged day shows ⚠ with the reason, so "Flagged Entries" and ⚠ always match
@@ -1076,7 +1114,8 @@ function renderRow(r) {
     const dateStr = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const dateShort = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + String(r.date.getFullYear()).slice(2); // phones: "11 Nov 26"
     const rowAnomaly = isFlagged(r);
-    const tankerCell = r.actualsFlag
+    const tankerCell = r.tankersMissing ? '<span class="tankers-missing" title="Tanker count not entered yet">—</span>'
+        : r.actualsFlag
         ? `${fmt(r.nominalTankerL)} <span class="badge warn cell-warn" title="Source 'Tanker Water Actuals' for this day is a meter-formula artifact (${fmt(r.actualsL)} L) — nominal (loads × 12,000 L) shown instead and used in totals">⚠</span>`
         : fmt(r.nominalTankerL);
     const kwaCell = r.kwaFlag
@@ -1085,7 +1124,7 @@ function renderRow(r) {
     return `
         <tr class="${rowAnomaly ? 'anomaly-row' : ''}">
             <td class="col-date"><span class="h-long">${dateStr}</span><span class="h-short">${dateShort}</span></td>
-            <td>${r.tankers}</td>
+            <td>${r.tankersMissing ? '<span class="tankers-missing" title="Tanker count not entered yet">—</span>' : r.tankers}</td>
             <td>${tankerCell}</td>
             <td>${fmt(r.rainwaterL)}</td>
             <td>${kwaCell}</td>
@@ -1238,6 +1277,7 @@ function aggregateMonth(year, month) { // month: 1-12
 
     let tankerLoads = 0, nominalTankerL = 0, rainL = 0, kwaL = 0;
     let rainExcluded = 0, kwaExcluded = 0;
+    const tankerPending = recs.filter(r => r.tankersMissing).map(r => r.date.getDate());
     recs.forEach(r => {
         tankerLoads += r.tankers;
         nominalTankerL += r.nominalTankerL;
@@ -1248,7 +1288,7 @@ function aggregateMonth(year, month) { // month: 1-12
     return {
         year, month, daysLogged: recs.length, daysInMonth,
         isPartial: recs.length < daysInMonth,
-        tankerLoads, nominalTankerL, rainL, kwaL, rainExcluded, kwaExcluded
+        tankerLoads, nominalTankerL, rainL, kwaL, rainExcluded, kwaExcluded, tankerPending
     };
 }
 
@@ -1345,6 +1385,8 @@ function renderMonthInsight(y, m, agg, days) {
     const excludedNotes = [];
     if (agg.rainExcluded) excludedNotes.push(`Rainwater left out on ${agg.rainExcluded} day(s) (pool water logged as rain)`);
     if (agg.kwaExcluded) excludedNotes.push(`KWA left out on ${agg.kwaExcluded} day(s) (negative meter value)`);
+    const pendingNote = agg.tankerPending.length
+        ? `<div class="chart-footer-note">Tanker count not entered in the sheet yet for ${agg.tankerPending.map(d => monthLabel(y, m).split(' ')[0] + ' ' + d).join(', ')} — tanker loads for ${agg.tankerPending.length === 1 ? 'that day are' : 'those days are'} not included until entered.</div>` : '';
 
     return `
         <div class="insight-box">
@@ -1356,6 +1398,7 @@ function renderMonthInsight(y, m, agg, days) {
             ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
         </div>
         ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — those days are otherwise counted; see Daily Log tab.</div>` : ''}
+        ${pendingNote}
         <div class="chart-footer-note">Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
 }
 
