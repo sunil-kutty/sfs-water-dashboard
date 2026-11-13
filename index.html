@@ -412,7 +412,6 @@
     .bar-pop-go:hover { background: #1d4ed8; }
     html.dark .bar-pop { background: #243145; color: #e2e8f0; border-color: #475569; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
     html.dark .bar-pop-sub, html.dark .bar-pop-close { color: #94a3b8; }
-    .card-note { margin-top: 4px; font-size: 0.7rem; font-weight: 600; color: #92400e; line-height: 1.3; cursor: help; }
     .badge.pending { background: #fef3c7; color: #92400e; cursor: help; }
     .tankers-missing { color: #92400e; font-weight: 600; }
     .partial-badge { display:inline-block; margin-top:4px; font-size:0.65rem; background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:7px; }
@@ -658,7 +657,6 @@
     html.dark .leak-tag { color: #f87171; }
     html.dark #noResults, html.dark .no-data-note, html.dark .chart-footer-note, html.dark footer { color: #8b9ab0; }
     html.dark footer .confidential { color: #94a3b8; }
-    html.dark .card-note { color: #fcd34d; }
     html.dark .badge.pending { background: rgba(245,158,11,0.18); color: #fcd34d; }
     html.dark .tankers-missing { color: #fcd34d; }
     html.dark .partial-badge { background: rgba(245,158,11,0.18); color: #fcd34d; }
@@ -705,7 +703,7 @@
 
     <div class="stats" id="statsBox" data-state="loading">
         <div class="stat-card"><div class="num" id="statDays">…</div><div class="label">Days Logged</div></div>
-        <div class="stat-card"><div class="num" id="statTanker">…</div><div class="label">Tanker Loads (Total)</div><div class="card-note" id="pendingNote" hidden></div></div>
+        <div class="stat-card"><div class="num" id="statTanker">…</div><div class="label">Tanker Loads (Total)</div></div>
         <div class="stat-card"><div class="num" id="statRain">…</div><div class="label">Rainwater (L)</div></div>
         <div class="stat-card"><div class="num" id="statKwa">…</div><div class="label">KWA Water (L)</div></div>
         <div class="stat-card anomaly" title="Days where one value in the source sheet looked wrong. A flagged day is still counted — only the wrong value is handled: a broken Tanker Actuals reading is ignored (tankers are counted as loads × 12,000 L), pool water entered as Rainwater is left out, and a negative KWA reading is left out. Tap to see each day."><div class="num" id="statAnomaly">…</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
@@ -992,20 +990,7 @@ function renderStats(records) {
     document.getElementById('statRain').textContent = fmt(rainL);
     document.getElementById('statKwa').textContent = fmt(kwaL);
     document.getElementById('statAnomaly').textContent = anomalyCount;
-    renderPendingNote(records);
     renderMixDonut(tankerLoads * TANKER_LOAD_L, kwaL, rainL);
-}
-
-// Days whose tanker count is not in the sheet yet: short note on the Tanker Loads card (goes away once entered)
-function renderPendingNote(records) {
-    const el = document.getElementById('pendingNote');
-    if (!el) return;
-    const pend = records.filter(r => r.tankersMissing).sort((a, b) => a.date - b.date);
-    if (!pend.length) { el.hidden = true; el.textContent = ''; return; }
-    const names = pend.map(r => r.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
-    el.textContent = pend.length <= 2 ? `${names.join(', ')} not entered yet` : `${pend.length} days not entered yet`;
-    el.title = `Tanker count not entered in the sheet yet for ${names.join(', ')}. KWA and rainwater for ${pend.length === 1 ? 'that day are' : 'those days are'} counted; tanker loads will be added once entered.`;
-    el.hidden = false;
 }
 
 // Donut of Tanker / KWA / Rainwater share, built from the exact same totals as the cards above
@@ -1278,7 +1263,6 @@ function aggregateMonth(year, month) { // month: 1-12
 
     let tankerLoads = 0, nominalTankerL = 0, rainL = 0, kwaL = 0;
     let rainExcluded = 0, kwaExcluded = 0;
-    const tankerPending = recs.filter(r => r.tankersMissing).map(r => r.date.getDate());
     recs.forEach(r => {
         tankerLoads += r.tankers;
         nominalTankerL += r.nominalTankerL;
@@ -1289,7 +1273,7 @@ function aggregateMonth(year, month) { // month: 1-12
     return {
         year, month, daysLogged: recs.length, daysInMonth,
         isPartial: recs.length < daysInMonth,
-        tankerLoads, nominalTankerL, rainL, kwaL, rainExcluded, kwaExcluded, tankerPending
+        tankerLoads, nominalTankerL, rainL, kwaL, rainExcluded, kwaExcluded
     };
 }
 
@@ -1386,8 +1370,6 @@ function renderMonthInsight(y, m, agg, days) {
     const excludedNotes = [];
     if (agg.rainExcluded) excludedNotes.push(`Rainwater left out on ${agg.rainExcluded} day(s) (pool water logged as rain)`);
     if (agg.kwaExcluded) excludedNotes.push(`KWA left out on ${agg.kwaExcluded} day(s) (negative meter value)`);
-    const pendingNote = agg.tankerPending.length
-        ? `<div class="chart-footer-note">Tanker count not entered in the sheet yet for ${agg.tankerPending.map(d => monthLabel(y, m).split(' ')[0] + ' ' + d).join(', ')} — tanker loads for ${agg.tankerPending.length === 1 ? 'that day are' : 'those days are'} not included until entered.</div>` : '';
 
     return `
         <div class="insight-box">
@@ -1399,7 +1381,6 @@ function renderMonthInsight(y, m, agg, days) {
             ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
         </div>
         ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — those days are otherwise counted; see Daily Log tab.</div>` : ''}
-        ${pendingNote}
         <div class="chart-footer-note">Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
 }
 
