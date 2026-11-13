@@ -299,6 +299,7 @@
         flex-wrap: wrap;
     }
     .legend span { display: inline-flex; align-items: center; gap: 4px; }
+    .legend b { font-weight: 700; letter-spacing: 0.3px; } /* source labels in capitals stand out from their description */
 
     .table-scroll {
         background: #fff;
@@ -619,9 +620,9 @@
         <div id="resultCount"></div>
 
         <div class="legend">
-            <span>Tanker (nominal = loads × 12,000 L)</span>
-            <span>Rainwater received that day (L)</span>
-            <span>KWA 1 / KWA 2 — cumulative meter reading (KL)</span>
+            <span><b>TANKER WATER</b> — Loads × 12,000 L</span>
+            <span><b>RAINWATER</b> — Collected that day, in litres</span>
+            <span><b>KWA WATER RECEIVED</b> — Water in that day, in litres (from the change in the KWA 1 + KWA 2 meters, which are in KL)</span>
             <span><span class="badge warn">⚠</span> A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</span>
         </div>
 
