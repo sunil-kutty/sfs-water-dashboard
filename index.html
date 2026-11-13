@@ -284,11 +284,7 @@
         cursor: pointer;
     }
 
-    #resultCount {
-        margin: 0 auto 10px;
-        font-size: 0.8rem;
-        color: #6b7280;
-    }
+
 
     .legend {
         margin: 0 auto 14px;
@@ -299,23 +295,34 @@
         flex-wrap: wrap;
     }
     .legend span { display: inline-flex; align-items: center; gap: 4px; }
-    /* "How to read this table": one tidy line, full explanation on tap (same on web and phone) */
-    details.howto { margin: 0 auto 14px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; }
-    details.howto summary { list-style: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: #1d4ed8; padding: 8px 12px; }
-    details.howto summary::-webkit-details-marker { display: none; }
-    details.howto summary::before { content: 'ⓘ '; }
-    details.howto summary::after { content: ' ▾'; font-size: 0.7rem; }
-    details.howto[open] summary::after { content: ' ▴'; }
-    details.howto[open] summary { border-bottom: 1px solid #e5e7eb; }
-    details.howto summary:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 10px; }
-    details.howto dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; padding: 10px 12px 12px; font-size: 0.78rem; color: #374151; line-height: 1.4; }
-    details.howto dt { font-weight: 700; color: #1f2937; }
-    details.howto dd { margin: 0; }
-    html.dark details.howto { background: #1e293b; border-color: #334155; }
-    html.dark details.howto summary { color: #93c5fd; }
-    html.dark details.howto[open] summary { border-bottom-color: #334155; }
-    html.dark details.howto dl { color: #cbd5e1; }
-    html.dark details.howto dt { color: #f1f5f9; }
+    /* Daily Log: "Find days" panel (search) and the results card (count + How to read + table) */
+    .find-panel { background: #e8edf5; border-radius: 12px; padding: 10px; margin: 20px auto 12px; }
+    .find-h { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; color: #4b5563; margin: 0 0 6px 2px; }
+    .find-panel .controls { margin: 0; }
+    .results-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); overflow: hidden; }
+    .res-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #e5e7eb; }
+    .res-count { font-size: 0.95rem; font-weight: 700; color: #1f2937; }
+    .res-count .n { color: #1d4ed8; font-size: 1.05rem; }
+    .res-count .of { font-weight: 400; color: #4b5563; font-size: 0.85rem; }
+    .howto-btn { border: none; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: #1d4ed8; cursor: pointer; padding: 4px 2px; white-space: nowrap; }
+    .howto-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 6px; }
+    .howto-caret { font-size: 0.7rem; }
+    .howto-panel { border-bottom: 1px solid #e5e7eb; background: #f8fafc; }
+    .howto-panel dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; padding: 10px 14px 12px; font-size: 0.78rem; color: #374151; line-height: 1.4; }
+    .howto-panel dt { font-weight: 700; color: #1f2937; }
+    .howto-panel dd { margin: 0; }
+    .results-card .table-scroll { border-radius: 0; box-shadow: none; }
+    html.dark .find-panel { background: #172033; }
+    html.dark .find-h { color: #94a3b8; }
+    html.dark .results-card { background: #1e293b; box-shadow: 0 0 0 1px rgba(148,163,184,0.12), 0 1px 4px rgba(0,0,0,0.5); }
+    html.dark .res-head, html.dark .howto-panel { border-color: #334155; }
+    html.dark .res-count { color: #f1f5f9; }
+    html.dark .res-count .n, html.dark .howto-btn { color: #93c5fd; }
+    html.dark .res-count .of { color: #94a3b8; }
+    html.dark .howto-panel { background: #243145; }
+    html.dark .howto-panel dl { color: #cbd5e1; }
+    html.dark .howto-panel dt { color: #f1f5f9; }
+    html.dark .results-card .table-scroll { box-shadow: none; }
 
     .table-scroll {
         background: #fff;
@@ -539,7 +546,7 @@
     html.dark .live-status.offline { background: rgba(15,23,42,0.55); color: #fca5a5; }
     html.dark .stat-card .num { color: #60a5fa; }
     html.dark .stats[data-state] .stat-card .num, html.dark td.state-cell { color: #94a3b8; }
-    html.dark .stat-card .label, html.dark .mix-title, html.dark #resultCount, html.dark .legend,
+    html.dark .stat-card .label, html.dark .mix-title, html.dark .legend,
     html.dark .chart-sub, html.dark .remark-tag { color: #94a3b8; }
     html.dark .mix-legend, html.dark .chart-legend { color: #cbd5e1; }
     html.dark .stat-card.anomaly .num, html.dark .stat-card.anomaly .tap-hint { color: #fbbf24; }
@@ -628,22 +635,13 @@
 
     <!-- ===== Daily Log panel ===== -->
     <div class="panel active" id="panel-log">
-        <div class="controls">
-            <input type="text" id="searchBox" placeholder="Search date, remarks or leak report...">
-            <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
+        <div class="find-panel">
+            <div class="find-h">🔍 FIND DAYS</div>
+            <div class="controls">
+                <input type="text" id="searchBox" placeholder="Search date, remarks or leak report...">
+                <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
+            </div>
         </div>
-
-        <div id="resultCount"></div>
-
-        <details class="howto" id="howToRead">
-            <summary>How to read this table</summary>
-            <dl>
-                <dt>Tanker water</dt><dd>Loads × 12,000 L</dd>
-                <dt>Rainwater</dt><dd>Collected that day, in litres</dd>
-                <dt>KWA received</dt><dd>Litres received from KWA, worked out from the KWA 1 + KWA 2 meter readings (KL)</dd>
-                <dt><span class="badge warn">⚠</span></dt><dd>A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</dd>
-            </dl>
-        </details>
 
         <div class="flag-modal-overlay" id="flagModalOverlay">
             <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true">
@@ -652,6 +650,19 @@
             </div>
         </div>
 
+        <div class="results-card">
+        <div class="res-head">
+            <div class="res-count" id="resultCount" role="status" aria-live="polite"></div>
+            <button type="button" class="howto-btn" id="howToBtn" aria-expanded="false" aria-controls="howToPanel">ⓘ How to read <span class="howto-caret">▾</span></button>
+        </div>
+        <div class="howto-panel" id="howToPanel" hidden>
+            <dl>
+                <dt>Tanker water</dt><dd>Loads × 12,000 L</dd>
+                <dt>Rainwater</dt><dd>Collected that day, in litres</dd>
+                <dt>KWA received</dt><dd>Litres received from KWA, worked out from the KWA 1 + KWA 2 meter readings (KL)</dd>
+                <dt><span class="badge warn">⚠</span></dt><dd>A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</dd>
+            </dl>
+        </div>
         <div class="table-scroll">
             <table id="logTable">
                 <thead>
@@ -670,6 +681,7 @@
             </table>
         </div>
         <div id="noResults">No matching day found.</div>
+        </div>
     </div>
 
     <!-- ===== Monthly Chart panel ===== -->
@@ -1069,8 +1081,12 @@ function applyFilters() {
     renderLogTable(filtered);
     renderStats(filtered);
     renderFlagSummary(filtered);
-    document.getElementById('resultCount').textContent =
-        filtered.length === yearScoped.length ? `Showing all ${yearScoped.length} days` : `Showing ${filtered.length} of ${yearScoped.length} days`;
+    const rc = document.getElementById('resultCount');
+    const narrowed = filtered.length !== yearScoped.length;
+    rc.classList.toggle('filtered', narrowed);
+    rc.innerHTML = narrowed
+        ? `<span class="n">${filtered.length}</span> <span class="of">of ${yearScoped.length} ${yearScoped.length === 1 ? 'day' : 'days'}</span>`
+        : `<span class="n">${yearScoped.length}</span> <span class="of">${yearScoped.length === 1 ? 'day' : 'days'}</span>`;
     document.getElementById('noResults').style.display = filtered.length === 0 ? 'block' : 'none';
     renderPeriodLabel();
     renderMonthChart(); // chart always shows the same period as the cards
@@ -1414,7 +1430,7 @@ function showPlaceholders(state) {
     const pl = document.getElementById('periodLabel'); pl.classList.remove('filtered'); pl.textContent = state === 'loading' ? 'Loading data…' : 'No data loaded';
     document.getElementById('logBody').innerHTML = `<tr><td colspan="8" class="state-cell">${msg}</td></tr>`;
     document.getElementById('monthChartCard').innerHTML = `<div class="no-data-note">${msg}</div>`;
-    document.getElementById('resultCount').textContent = '';
+    document.getElementById('resultCount').innerHTML = ''; document.getElementById('resultCount').classList.remove('filtered');
     document.getElementById('noResults').style.display = 'none';
 }
 
@@ -1468,6 +1484,13 @@ function debounce(fn, delayMs) {
         timer = setTimeout(() => fn.apply(this, args), delayMs);
     };
 }
+document.getElementById('howToBtn').addEventListener('click', function () {
+    const panel = document.getElementById('howToPanel');
+    const open = panel.hidden;
+    panel.hidden = !open;
+    this.setAttribute('aria-expanded', String(open));
+    this.querySelector('.howto-caret').textContent = open ? '▴' : '▾';
+});
 document.getElementById('searchBox').addEventListener('input', debounce(applyFilters, 180));
 document.getElementById('monthSelect').addEventListener('change', applyFilters);
 document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
