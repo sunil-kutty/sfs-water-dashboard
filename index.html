@@ -717,9 +717,6 @@
         <div class="compare-wrap">
             <div id="monthChartCard"><div class="no-data-note">Loading data…</div></div>
         </div>
-        <div class="note-box">
-            2025 onward · Tanker = loads × 12,000 L · Flagged days are still counted (see Known data issues below).
-        </div>
     </div>
 
     <!-- Known data issues: closed by default, one tap opens it (same style idea as "How to read") -->
@@ -1292,7 +1289,7 @@ function renderMonthInsight(y, m, agg, days) {
             ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
         </div>
         ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — those days are otherwise counted; see Daily Log tab.</div>` : ''}
-        <div class="chart-footer-note">Recomputed live from the same dataset as the Daily Log tab.</div>`;
+        <div class="chart-footer-note">Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
 }
 
 function renderMonthChart() {
@@ -1424,7 +1421,7 @@ function renderPeriodInsight(title, series) {
             Rainwater ${pct(t.rainL)}% (${fmt(t.rainL)} L).
             ${pool.length > 1 ? ` Highest month: ${monthLabel(hi.y, hi.m)} (${fmt(hi.total)} L). Lowest: ${monthLabel(lo.y, lo.m)} (${fmt(lo.total)} L)${full.length ? ' — fully logged months only' : ''}.` : ''}
         </div>
-        <div class="chart-footer-note">Same totals as the cards above. Recomputed live from the same dataset as the Daily Log tab.</div>`;
+        <div class="chart-footer-note">Same totals as the cards above · Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
 }
 
 // ---------- Tabs ----------
