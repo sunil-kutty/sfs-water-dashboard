@@ -111,6 +111,11 @@
     .theme-switch button[aria-checked="true"] { background: rgba(255,255,255,0.95); color: #1e3a8a; font-weight: 700; }
     html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @media (max-width: 480px) { /* phones only: tighter spacing so the page starts higher; text sizes unchanged */
+        header { padding: 18px 20px 14px; }
+        header p { margin-top: 4px; }
+        .live-status, .refresh-btn, .theme-switch { margin-top: 8px; }
+    }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
 
