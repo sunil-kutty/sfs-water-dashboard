@@ -492,15 +492,23 @@
         position: absolute;
         top: 10px;
         right: 12px;
-        background: none;
+        /* a round grey button, so the close "×" stands apart from the amber text */
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #e5e7eb;
         border: none;
-        font-size: 1.3rem;
+        border-radius: 50%;
+        font-size: 1.25rem;
         line-height: 1;
-        color: #92400e;
+        color: #374151;
         cursor: pointer;
-        padding: 6px 8px;
+        padding: 0;
     }
-    .flag-modal-close:hover { opacity: 0.6; }
+    .flag-modal-close:hover { background: #d1d5db; color: #111827; }
+    .flag-modal-close:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
     .flag-modal > strong { display: block; margin: 0 28px 10px 0; font-size: 0.95rem; }
     .flag-modal ul { margin: 0; padding-left: 20px; }
     .flag-modal li { margin-bottom: 8px; }
@@ -585,7 +593,8 @@
     html.dark .insight-box { background: #172554; border-color: #1e40af; color: #bfdbfe; }
     html.dark .insight-box strong { color: #dbeafe; }
     html.dark .note-box, html.dark .flag-modal { background: #2a2111; border-color: #78591a; color: #fcd34d; }
-    html.dark .flag-modal-close { color: #fcd34d; }
+    html.dark .flag-modal-close { background: #334155; color: #e2e8f0; }
+    html.dark .flag-modal-close:hover { background: #475569; color: #fff; }
     html.dark .flag-modal-overlay { background: rgba(0,0,0,0.6); }
 </style>
 </head>
