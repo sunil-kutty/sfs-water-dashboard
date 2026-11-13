@@ -299,7 +299,23 @@
         flex-wrap: wrap;
     }
     .legend span { display: inline-flex; align-items: center; gap: 4px; }
-    .legend b { font-weight: 700; letter-spacing: 0.3px; } /* source labels in capitals stand out from their description */
+    /* "How to read this table": one tidy line, full explanation on tap (same on web and phone) */
+    details.howto { margin: 0 auto 14px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; }
+    details.howto summary { list-style: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: #1d4ed8; padding: 8px 12px; }
+    details.howto summary::-webkit-details-marker { display: none; }
+    details.howto summary::before { content: 'ⓘ '; }
+    details.howto summary::after { content: ' ▾'; font-size: 0.7rem; }
+    details.howto[open] summary::after { content: ' ▴'; }
+    details.howto[open] summary { border-bottom: 1px solid #e5e7eb; }
+    details.howto summary:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 10px; }
+    details.howto dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; padding: 10px 12px 12px; font-size: 0.78rem; color: #374151; line-height: 1.4; }
+    details.howto dt { font-weight: 700; color: #1f2937; }
+    details.howto dd { margin: 0; }
+    html.dark details.howto { background: #1e293b; border-color: #334155; }
+    html.dark details.howto summary { color: #93c5fd; }
+    html.dark details.howto[open] summary { border-bottom-color: #334155; }
+    html.dark details.howto dl { color: #cbd5e1; }
+    html.dark details.howto dt { color: #f1f5f9; }
 
     .table-scroll {
         background: #fff;
@@ -619,12 +635,15 @@
 
         <div id="resultCount"></div>
 
-        <div class="legend">
-            <span><b>TANKER WATER</b> — Loads × 12,000 L</span>
-            <span><b>RAINWATER</b> — Collected that day, in litres</span>
-            <span><b>KWA WATER RECEIVED</b> — Water in that day, in litres (from the change in the KWA 1 + KWA 2 meters, which are in KL)</span>
-            <span><span class="badge warn">⚠</span> A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</span>
-        </div>
+        <details class="howto" id="howToRead">
+            <summary>How to read this table</summary>
+            <dl>
+                <dt>Tanker water</dt><dd>Loads × 12,000 L</dd>
+                <dt>Rainwater</dt><dd>Collected that day, in litres</dd>
+                <dt>KWA received</dt><dd>Litres received from KWA, worked out from the KWA 1 + KWA 2 meter readings (KL)</dd>
+                <dt><span class="badge warn">⚠</span></dt><dd>A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</dd>
+            </dl>
+        </details>
 
         <div class="flag-modal-overlay" id="flagModalOverlay">
             <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true">
