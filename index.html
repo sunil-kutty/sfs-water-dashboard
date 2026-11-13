@@ -342,13 +342,13 @@
         z-index: 2;
         text-align: left;
         padding: 10px 12px;
-        background: #f8fafc;
-        color: #475569;
+        background: #dbeafe; /* soft blue headings: clearly a heading, matches the dashboard's blue */
+        color: #1e3a8a;
         font-weight: 700;
         font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.4px;
-        border-bottom: 2px solid #e5e7eb;
+        border-bottom: 2px solid #93c5fd;
         white-space: nowrap;
     }
     tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; white-space: nowrap; }
@@ -568,7 +568,7 @@
     html.dark #searchBox::placeholder { color: #64748b; }
     html.dark .year-btn.active, html.dark .tab-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
     html.dark select:disabled { background: #172033; color: #64748b; border-color: #334155; }
-    html.dark thead th { background: #243145; color: #94a3b8; border-bottom-color: #334155; }
+    html.dark thead th { background: #1e3a8a; color: #dbeafe; border-bottom-color: #3b82f6; }
     html.dark tbody td { border-bottom-color: #263244; }
     html.dark tbody tr:hover { background: #243145; }
     html.dark tbody tr.anomaly-row { background: rgba(245,158,11,0.10); }
@@ -642,7 +642,7 @@
         <div class="find-panel">
             <div class="find-h">🔍 FIND DAYS</div>
             <div class="controls">
-                <input type="text" id="searchBox" placeholder="Search date, remarks or leak report...">
+                <input type="text" id="searchBox" placeholder="Search date or notes…">
                 <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
             </div>
         </div>
@@ -974,6 +974,16 @@ function closeFlagModal() {
 }
 
 
+// The tags the dashboard adds in the Notes column (same text as shown), so search can find them too
+function noteTagTexts(r) {
+    const t = [];
+    if (r.actualsFlag) t.push('⚠ Tanker meter value ignored');
+    if (r.isPoolWater) t.push('⚠ Pool water — not counted as rain');
+    if (r.kwaFlag) t.push('⚠ KWA value left out');
+    if (r.rainwaterUnitRaw) t.push('raw-L format');
+    return t;
+}
+
 function noteCell(r) {
     const parts = [];
     // Uses 🔧 (not ⚠) deliberately — a leak report is operational info, not a data-quality
@@ -1065,7 +1075,8 @@ function getFilteredRecords(base) {
         if (anomalyOnly && !isAnomaly) return false;
         if (q) {
             const dateStr = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toLowerCase();
-            const hay = (dateStr + ' ' + r.remarks + ' ' + r.leak).toLowerCase();
+            // Everything shown in the Notes column: remark, leak report and the dashboard's own tags
+            const hay = (dateStr + ' ' + r.remarks + ' ' + r.leak + ' ' + noteTagTexts(r).join(' ')).toLowerCase();
             if (!hay.includes(q)) return false;
         }
         return true;
