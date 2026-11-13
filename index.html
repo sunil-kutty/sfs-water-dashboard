@@ -412,6 +412,10 @@
 
     .chart-title { font-size: 1.05rem; font-weight: 700; color: #111827; }
     .chart-sub { font-size: 0.78rem; color: #6b7280; margin-top: 2px; margin-bottom: 14px; }
+    /* What the user can do with this chart: blue (like other tappable things), next to the bars, not boxed so it isn't mistaken for a button */
+    .tap-hint-line { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; font-size: 0.82rem; font-weight: 600; color: #1d4ed8; }
+    .tap-hint-line .hand { font-size: 1.05rem; line-height: 1; flex: 0 0 auto; }
+    html.dark .tap-hint-line { color: #93c5fd; }
     .chart-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; } /* ~33px tall: easy to tap on phones */
     .chart-back:hover { background: #dbeafe; }
     .chart-back:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
@@ -1352,8 +1356,9 @@ function renderMonthChart() {
     const anyPartial = series.some(s => s.logged && s.partial);
     card.innerHTML = filterNote + `
         <div class="chart-title">${title} · Water Supply by Month</div>
-        <div class="chart-sub">Tanker + KWA + Rainwater, per month · number above each bar = that month's total in KL · <b>tap a bar</b> for that month's figures${anyPartial ? ' · * = month not fully logged' : ''}</div>
+        <div class="chart-sub">Tanker + KWA + Rainwater, per month · number above each bar = that month's total in KL${anyPartial ? ' · * = month not fully logged' : ''}</div>
         ${legend}
+        <div class="tap-hint-line"><span class="hand" aria-hidden="true">👆</span>Tap any bar to see that month's figures and its daily chart</div>
         ${buildPeriodChartSvg(series, currentYear === 'ALL')}
         ${renderPeriodInsight(title, series)}`;
 }
