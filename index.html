@@ -412,6 +412,11 @@
 
     .chart-title { font-size: 1.05rem; font-weight: 700; color: #111827; }
     .chart-sub { font-size: 0.78rem; color: #6b7280; margin-top: 2px; margin-bottom: 14px; }
+    .chart-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; } /* ~33px tall: easy to tap on phones */
+    .chart-back:hover { background: #dbeafe; }
+    .chart-back:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+    html.dark .chart-back { background: #172554; border-color: #1e40af; color: #93c5fd; }
+    html.dark .chart-back:hover { background: #1e3a8a; }
     .chart-legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 0.78rem; color: #374151; }
     .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
     .sw.tanker { background: var(--c-tanker); }
@@ -1312,10 +1317,11 @@ function renderMonthChart() {
         // One month: daily bars (unchanged)
         const y = Number(currentYear), m = Number(month);
         const agg = aggregateMonth(y, m);
-        if (!agg) { card.innerHTML = filterNote + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
+        const back = `<button type="button" class="chart-back">← All months of ${y}</button>`;
+        if (!agg) { card.innerHTML = filterNote + back + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
         const days = buildDailySeries(y, m);
         const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
-        card.innerHTML = filterNote + `
+        card.innerHTML = filterNote + back + `
             <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
             <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
             ${legend}
@@ -1615,7 +1621,16 @@ document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
         document.getElementById('monthSelect').value = m;
         applyFilters();
     }
+    // "← All months of YYYY" above a daily chart: clears the month filter (chart, cards and Daily Log
+    // all go back to the whole year) and keeps the chart where it was on screen instead of jumping.
+    function backToMonths() {
+        const before = card.getBoundingClientRect().top;
+        document.getElementById('monthSelect').value = 'ALL';
+        applyFilters();
+        window.scrollBy(0, card.getBoundingClientRect().top - before);
+    }
     card.addEventListener('click', e => {
+        if (e.target.closest('.chart-back')) { backToMonths(); return; }
         if (e.target.closest('.bar-pop-go')) { drill(openYm); return; }
         if (e.target.closest('.bar-pop-close')) { close(); return; }
         if (e.target.closest('.bar-pop')) return;
