@@ -35,6 +35,9 @@
 <meta property="og:url" content="https://sunil-kutty.github.io/sfs-water-dashboard/">
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Stop phone browsers (iPhone Safari, Android Chrome) from enlarging some text blocks on their own,
+       so text set to the same size really shows at the same size on phones too */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         background: #f1f4f9;
@@ -449,6 +452,7 @@
     .note-box {
         margin: 16px auto 0;
         font-size: 0.75rem;
+        line-height: 1.5; /* same line spacing as the chart summary box */
         color: #92400e;
         background: #fffbeb;
         border: 1px solid #fde68a;
