@@ -416,6 +416,31 @@
     .tap-hint-line { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; font-size: 0.82rem; font-weight: 600; color: #1d4ed8; }
     .tap-hint-line .hand { font-size: 1.05rem; line-height: 1; flex: 0 0 auto; }
     html.dark .tap-hint-line { color: #93c5fd; }
+    /* Short labels for phones; long ones elsewhere */
+    .h-short { display: none; }
+    .tap-hint-line.swipe-hint { margin: 0; padding: 8px 14px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; }
+    html.dark .tap-hint-line.swipe-hint { border-color: #334155; background: #243145; }
+    .tap-hint-line.chart-swipe { justify-content: flex-end; margin: 6px 0 0; font-size: 0.78rem; }
+    .chart-svg-wrap .hit { fill: transparent; } /* whole column is tappable, not just the coloured bar */
+    @media (max-width: 600px) {
+        .h-long { display: none; }
+        .h-short { display: inline; }
+        table { min-width: 0; font-size: 0.78rem; }
+        thead th { white-space: normal; padding: 8px 6px; font-size: 0.74rem; line-height: 1.2; vertical-align: bottom; }
+        tbody td { padding: 8px 6px; }
+        tbody td.notes { min-width: 200px; }
+        .cell-warn { display: none; } /* phones: the ⚠ note is in the Notes column and the row is shaded */
+        .col-date { position: sticky; left: 0; z-index: 1; background: #fff; box-shadow: 1px 0 0 #e5e7eb; } /* Date stays in view while swiping */
+        thead th.col-date { z-index: 3; background: #1e40af; }
+        tbody tr.anomaly-row td.col-date { background: #fffbeb; }
+        html.dark .col-date { background: #1e293b; box-shadow: 1px 0 0 #334155; }
+        html.dark thead th.col-date { background: #1e40af; }
+        html.dark tbody tr.anomaly-row td.col-date { background: #333536; } /* solid version of the dark flagged-row tint */
+        .compare-wrap { padding: 16px 14px; }
+        .chart-svg-wrap svg.fit .ax-y { font-size: 9px; }
+        .chart-svg-wrap svg.fit .ax-x { font-size: 9.5px; }
+        .chart-svg-wrap svg.fit .bar-kl { font-size: 8.5px; }
+    }
     .chart-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; } /* ~33px tall: easy to tap on phones */
     .chart-back:hover { background: #dbeafe; }
     .chart-back:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
@@ -700,17 +725,18 @@
                 <dt><span class="badge warn">⚠</span></dt><dd>A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</dd>
             </dl>
         </div>
+        <div class="tap-hint-line swipe-hint" id="tableSwipeHint" hidden><span class="hand" aria-hidden="true">👉</span>Swipe sideways for more columns</div>
         <div class="table-scroll">
             <table id="logTable">
                 <thead>
                     <tr>
-                        <th>Date</th>
+                        <th class="col-date">Date</th>
                         <th>Tankers</th>
-                        <th>Tanker Water<br>(L)</th>
-                        <th>Rainwater<br>(L)</th>
-                        <th>KWA 1 Meter<br>(KL)</th>
-                        <th>KWA 2 Meter<br>(KL)</th>
-                        <th>KWA Water<br>Received (L)</th>
+                        <th><span class="h-long">Tanker Water<br>(L)</span><span class="h-short">Tanker<br>(L)</span></th>
+                        <th><span class="h-long">Rainwater<br>(L)</span><span class="h-short">Rain<br>(L)</span></th>
+                        <th><span class="h-long">KWA Water<br>Received (L)</span><span class="h-short">KWA<br>(L)</span></th>
+                        <th><span class="h-long">KWA 1 Meter<br>(KL)</span><span class="h-short">KWA 1<br>(KL)</span></th>
+                        <th><span class="h-long">KWA 2 Meter<br>(KL)</span><span class="h-short">KWA 2<br>(KL)</span></th>
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -1033,22 +1059,23 @@ function noteCell(r) {
 
 function renderRow(r) {
     const dateStr = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateShort = r.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + String(r.date.getFullYear()).slice(2); // phones: "11 Nov 26"
     const rowAnomaly = isFlagged(r);
     const tankerCell = r.actualsFlag
-        ? `${fmt(r.nominalTankerL)} <span class="badge warn" title="Source 'Tanker Water Actuals' for this day is a meter-formula artifact (${fmt(r.actualsL)} L) — nominal (loads × 12,000 L) shown instead and used in totals">⚠</span>`
+        ? `${fmt(r.nominalTankerL)} <span class="badge warn cell-warn" title="Source 'Tanker Water Actuals' for this day is a meter-formula artifact (${fmt(r.actualsL)} L) — nominal (loads × 12,000 L) shown instead and used in totals">⚠</span>`
         : fmt(r.nominalTankerL);
     const kwaCell = r.kwaFlag
-        ? `${fmt(r.kwaTotalL)} <span class="badge warn" title="Negative value — source meter-formula error; this KWA figure is left out of the KWA total (the rest of the day is counted)">⚠</span>`
+        ? `${fmt(r.kwaTotalL)} <span class="badge warn cell-warn" title="Negative value — source meter-formula error; this KWA figure is left out of the KWA total (the rest of the day is counted)">⚠</span>`
         : fmt(r.kwaTotalL);
     return `
         <tr class="${rowAnomaly ? 'anomaly-row' : ''}">
-            <td>${dateStr}</td>
+            <td class="col-date"><span class="h-long">${dateStr}</span><span class="h-short">${dateShort}</span></td>
             <td>${r.tankers}</td>
             <td>${tankerCell}</td>
             <td>${fmt(r.rainwaterL)}</td>
+            <td>${kwaCell}</td>
             <td>${r.kwa1 != null ? r.kwa1.toLocaleString('en-IN') : '—'}</td>
             <td>${r.kwa2 != null ? r.kwa2.toLocaleString('en-IN') : '—'}</td>
-            <td>${kwaCell}</td>
             <td class="notes">${noteCell(r)}</td>
         </tr>`;
 }
@@ -1058,6 +1085,7 @@ function renderLogTable(records) {
         .slice()
         .sort((a, b) => b.date - a.date)
         .map(renderRow).join('');
+    updateSwipeHints();
 }
 
 function populateMonthSelect() {
@@ -1144,6 +1172,19 @@ function applyFilters() {
     document.getElementById('noResults').style.display = filtered.length === 0 ? 'block' : 'none';
     renderPeriodLabel();
     renderMonthChart(); // chart always shows the same period as the cards
+    updateSwipeHints();
+}
+
+// "Swipe" hints: only when the table or chart is actually wider than the screen
+function updateSwipeHints() {
+    const ts = document.querySelector('.table-scroll'), th = document.getElementById('tableSwipeHint');
+    if (ts && th && ts.clientWidth > 0) th.hidden = ts.scrollWidth <= ts.clientWidth + 2;
+    const card = document.getElementById('monthChartCard');
+    const wrap = card && card.querySelector('.chart-svg-wrap');
+    let ch = card && card.querySelector('.chart-swipe');
+    if (wrap && wrap.clientWidth > 0 && wrap.scrollWidth > wrap.clientWidth + 2) {
+        if (!ch) { wrap.insertAdjacentHTML('afterend', '<div class="tap-hint-line chart-swipe">Swipe for more<span class="hand" aria-hidden="true">👉</span></div>'); }
+    } else if (ch) ch.remove();
 }
 
 // Says exactly which period/filters the cards and Supply mix cover; blue when narrowed
@@ -1366,8 +1407,12 @@ function renderMonthChart() {
 let lastMonthSeries = {}; // month figures behind the by-month chart, for the tap details box
 
 function buildPeriodChartSvg(series, showYear) {
-    const W = 900, H = 380;
-    const marginL = 72, marginR = 16, marginT = 28, marginB = 36;
+    // Phones: one year (12 bars) is drawn at the card's real width so every month is visible without
+    // swiping. Longer periods (2025–2026 combined) keep the wide chart and a "Swipe for more" hint.
+    const cardW = (document.getElementById('monthChartCard') || {}).clientWidth || 0;
+    const fit = cardW >= 290 && cardW < 600 && series.length <= 12; // below ~290px the month numbers would touch, so tiny phones keep the swipe
+    const W = fit ? cardW : 900, H = fit ? 240 : 380;
+    const marginL = fit ? 32 : 72, marginR = fit ? 2 : 16, marginT = fit ? 18 : 28, marginB = fit ? 20 : 36;
     const plotW = W - marginL - marginR, plotH = H - marginT - marginB;
     const n = series.length;
     const maxKl = Math.max(1, ...series.map(s => s.total / 1000));
@@ -1376,14 +1421,15 @@ function buildPeriodChartSvg(series, showYear) {
     for (let i = 0; i <= 4; i++) {
         const val = niceMax / 4 * i, y = marginT + plotH - (val / niceMax * plotH);
         gridlines += `<line x1="${marginL}" y1="${y}" x2="${W - marginR}" y2="${y}" style="stroke:var(--c-grid)" stroke-width="1"/>`;
-        gridlines += `<text x="${marginL - 8}" y="${y + 3}" class="ax-y" style="fill:var(--c-axis-text)" text-anchor="end">${fmt(Math.round(val))}${i === 4 ? ' KL' : ''}</text>`;
+        gridlines += `<text x="${marginL - (fit ? 4 : 8)}" y="${y + 3}" class="ax-y" style="fill:var(--c-axis-text)" text-anchor="end">${fmt(Math.round(val))}${i === 4 && !fit ? ' KL' : ''}</text>`;
     }
-    const slotW = plotW / n, barW = Math.max(4, Math.min(48, slotW - 8));
+    const slotW = plotW / n, barW = fit ? Math.max(4, slotW - 6) : Math.max(4, Math.min(48, slotW - 8));
     const stride = n > 12 ? 2 : 1; // combined view: label every other month so text doesn't collide
     let bars = '';
     series.forEach((s, i) => {
         const cx = marginL + i * slotW + slotW / 2, x = cx - barW / 2;
-        let yCursor = marginT + plotH, segs = '';
+        let yCursor = marginT + plotH;
+        let segs = `<rect class="hit" x="${(cx - slotW / 2).toFixed(1)}" y="${marginT}" width="${slotW.toFixed(1)}" height="${plotH}"/>`;
         [
             { v: s.tankerL, color: 'var(--c-tanker)', label: 'Tanker' },
             { v: s.kwaL, color: 'var(--c-kwa)', label: 'KWA' },
@@ -1407,7 +1453,7 @@ function buildPeriodChartSvg(series, showYear) {
             bars += `<text x="${cx.toFixed(1)}" y="${(marginT + plotH + 14).toFixed(1)}" class="ax-x" style="fill:var(--c-day)" text-anchor="middle">${lbl}</text>`;
         }
     });
-    return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" style="min-width:600px;width:100%;height:auto;">
+    return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" ${fit ? 'class="fit" style="width:100%;height:auto;"' : 'style="min-width:600px;width:100%;height:auto;"'}>
         ${gridlines}
         ${bars}
         <line x1="${marginL}" y1="${marginT + plotH}" x2="${W - marginR}" y2="${marginT + plotH}" style="stroke:var(--c-axis)" stroke-width="1"/>
@@ -1442,8 +1488,19 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'compare' && RECORDS.length) renderMonthChart();
+        updateSwipeHints();
     });
 });
+(function () {
+    let lastW = window.innerWidth, t = null;
+    window.addEventListener('resize', () => {
+        if (window.innerWidth === lastW) return;
+        lastW = window.innerWidth;
+        clearTimeout(t);
+        t = setTimeout(() => { if (RECORDS.length) renderMonthChart(); updateSwipeHints(); }, 150);
+    });
+})();
 
 // ---------- Refresh orchestration ----------
 function setLiveStatus(text, cls) {
