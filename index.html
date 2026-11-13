@@ -463,6 +463,17 @@
         padding: 10px 14px;
     }
     .caveat-count { font-weight: 600; }
+    /* "Known data issues" fold-out: same amber box, closed by default */
+    .note-box.issues { padding: 0; }
+    .issues-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: none; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: inherit; cursor: pointer; padding: 10px 14px; text-align: left; }
+    .issues-btn:focus-visible { outline: 2px solid #b45309; outline-offset: -2px; border-radius: 10px; }
+    .issues-n { font-weight: 400; opacity: 0.85; }
+    .issues-caret { font-size: 0.7rem; flex: 0 0 auto; }
+    .issues-panel { border-top: 1px solid #fde68a; padding: 8px 14px 12px; }
+    .issues-panel p { margin-bottom: 6px; }
+    .issues-panel ul { margin: 0 0 0 18px; padding: 0; }
+    .issues-panel li + li { margin-top: 5px; }
+    .issues-panel b { font-weight: 700; }
     .flag-modal-overlay {
         display: none;
         position: fixed;
@@ -596,6 +607,7 @@
     html.dark .insight-box { background: #172554; border-color: #1e40af; color: #bfdbfe; }
     html.dark .insight-box strong { color: #dbeafe; }
     html.dark .note-box, html.dark .flag-modal { background: #2a2111; border-color: #78591a; color: #fcd34d; }
+    html.dark .issues-panel { border-color: #78591a; }
     html.dark .flag-modal-close { background: #334155; color: #e2e8f0; }
     html.dark .flag-modal-close:hover { background: #475569; color: #fff; }
     html.dark .flag-modal-overlay { background: rgba(0,0,0,0.6); }
@@ -713,15 +725,20 @@
         </div>
     </div>
 
-    <div class="note-box">
-        <strong>Known data issues in the source sheet (flagged, not hidden — flagged days are still counted):</strong>
-        <ul style="margin:6px 0 0 18px; padding:0;">
-            <li>"Tanker Water Actuals" sometimes shows broken values (huge negative/positive numbers) near missing meter readings. That column is never used — tankers are always counted as loads × 12,000 L — so the day is counted as normal; ⚠ marks it.<span class="caveat-count" id="cvActuals"></span></li>
-            <li>The "Rainwater" column switched units partway through — most entries are counts of 12,000 L loads, but from early Sep 2026 onward it's plain litres. Detected automatically (≤10 ⇒ loads, &gt;10 ⇒ litres) and counted correctly either way; marked "raw-L format" as a note (not flagged — the value is correct).<span class="caveat-count" id="cvRawL"></span></li>
-            <li>A few days have "pool water" logged in the Rainwater column by mistake (per the sheet's own remarks). That day's rainwater figure is left out; the rest of the day is counted.<span class="caveat-count" id="cvPool"></span></li>
-            <li id="cvKwaItem" hidden>A negative "KWA Water Received" value (a meter-formula error) is left out of the KWA total; the rest of the day is counted.<span class="caveat-count" id="cvKwa"></span></li>
-            <li>KWA 1 / KWA 2 are raw cumulative meter readings (KL) as recorded — the daily "KWA Water Received" total isn't split back into a KWA1 vs KWA2 share.</li>
-        </ul>
+    <!-- Known data issues: closed by default, one tap opens it (same style idea as "How to read") -->
+    <div class="note-box issues">
+        <button type="button" class="issues-btn" id="issuesBtn" aria-expanded="false" aria-controls="issuesPanel">
+            <span>ⓘ Known data issues in the source sheet <span class="issues-n" id="issuesCount"></span></span><span class="issues-caret">▾</span></button>
+        <div class="issues-panel" id="issuesPanel" hidden>
+            <p>All days are still counted. Only the wrong value is handled, as below.</p>
+            <ul>
+                <li><b>Tanker meter glitch</b> — "Tanker Water Actuals" sometimes shows impossible numbers. That column is never used; tankers are counted as loads × 12,000 L. Marked ⚠.<span class="caveat-count" id="cvActuals"></span></li>
+                <li><b>Rainwater unit change</b> — entered as loads (1, 2, 3…) until Aug 2026, and as litres from Sep 2026. Both are read correctly (10 or less = loads). Shown as a "raw-L format" note.<span class="caveat-count" id="cvRawL"></span></li>
+                <li><b>Pool water entered as rain</b> — that day's rainwater figure is left out; the rest of the day is counted. Marked ⚠.<span class="caveat-count" id="cvPool"></span></li>
+                <li id="cvKwaItem" hidden><b>Negative KWA value</b> — a negative "KWA Water Received" (a meter-formula error) is left out of the KWA total; the rest of the day is counted. Marked ⚠.<span class="caveat-count" id="cvKwa"></span></li>
+                <li><b>KWA meter readings</b> — in KL, and not taken every day. "KWA Water Received" is the water since the previous reading.<span id="cvKwaDirect"></span><span class="caveat-count" id="cvKwaRead"></span></li>
+            </ul>
+        </div>
     </div>
 
 </div>
@@ -1433,14 +1450,38 @@ function setLiveStatus(text, cls) {
 
 // Day counts in the "Known data issues" box, from all loaded data (2025 onward), so they never go out of date
 function renderCaveatCounts() {
-    const n = f => RECORDS.filter(f).length;
-    const txt = k => ` (${k} ${k === 1 ? 'day' : 'days'} so far)`;
-    document.getElementById('cvActuals').textContent = txt(n(r => r.actualsFlag));
-    document.getElementById('cvRawL').textContent = txt(n(r => r.rainwaterUnitRaw));
-    document.getElementById('cvPool').textContent = txt(n(r => r.isPoolWater));
-    const k = n(r => r.kwaFlag);
-    document.getElementById('cvKwa').textContent = txt(k);
+    const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monYr = d => `${MON[d.getMonth()]} ${d.getFullYear()}`;
+    const days = k => `${k} ${k === 1 ? 'day' : 'days'}`;
+    const latest = RECORDS.reduce((m, r) => (r.date > m ? r.date : m), new Date(0));
+    // "(N days so far)" while the issue is still happening; "(N days; last seen Mon YYYY)" once it has
+    // not appeared in the last 60 days of data — both worked out from the data, never typed in.
+    const txt = f => {
+        const hits = RECORDS.filter(f);
+        if (!hits.length) return ' (0 days so far)';
+        const last = hits.reduce((m, r) => (r.date > m ? r.date : m), hits[0].date);
+        return (latest - last) / 86400000 > 60 ? ` (${days(hits.length)}; last seen ${monYr(last)})` : ` (${days(hits.length)} so far)`;
+    };
+    document.getElementById('cvActuals').textContent = txt(r => r.actualsFlag);
+    document.getElementById('cvRawL').textContent = txt(r => r.rainwaterUnitRaw);
+    document.getElementById('cvPool').textContent = txt(r => r.isPoolWater);
+    const k = RECORDS.filter(r => r.kwaFlag).length;
+    document.getElementById('cvKwa').textContent = txt(r => r.kwaFlag);
     document.getElementById('cvKwaItem').hidden = k === 0;
+    // KWA: how many days have both meter readings, and days where litres were entered with no readings
+    const read = RECORDS.filter(r => r.kwa1 != null && r.kwa2 != null).length;
+    const direct = RECORDS.filter(r => r.kwa1 == null && r.kwa2 == null && r.kwaTotalL != null && r.kwaTotalL > 0);
+    let directTxt = '';
+    if (direct.length) {
+        const a = direct.reduce((m, r) => (r.date < m ? r.date : m), direct[0].date);
+        const b = direct.reduce((m, r) => (r.date > m ? r.date : m), direct[0].date);
+        const span = monYr(a) === monYr(b) ? monYr(a)
+            : a.getFullYear() === b.getFullYear() ? `${MON[a.getMonth()]}–${monYr(b)}` : `${monYr(a)}–${monYr(b)}`;
+        directTxt = ` In ${span} litres were entered directly, without readings.`;
+    }
+    document.getElementById('cvKwaDirect').textContent = directTxt;
+    document.getElementById('cvKwaRead').textContent = ` (readings on ${read} of ${RECORDS.length} days` + (direct.length ? `; ${days(direct.length)} without)` : ')');
+    document.getElementById('issuesCount').textContent = `(${k === 0 ? 4 : 5})`;
 }
 
 function refreshUI() {
@@ -1524,6 +1565,13 @@ document.getElementById('howToBtn').addEventListener('click', function () {
     panel.hidden = !open;
     this.setAttribute('aria-expanded', String(open));
     this.querySelector('.howto-caret').textContent = open ? '▴' : '▾';
+});
+document.getElementById('issuesBtn').addEventListener('click', function () {
+    const panel = document.getElementById('issuesPanel');
+    const open = panel.hidden;
+    panel.hidden = !open;
+    this.setAttribute('aria-expanded', String(open));
+    this.querySelector('.issues-caret').textContent = open ? '▴' : '▾';
 });
 document.getElementById('searchBox').addEventListener('input', debounce(applyFilters, 180));
 document.getElementById('monthSelect').addEventListener('change', applyFilters);
