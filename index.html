@@ -414,6 +414,9 @@
     .chart-sub { font-size: 0.78rem; color: #6b7280; margin-top: 2px; margin-bottom: 14px; }
     /* What the user can do with this chart: blue (like other tappable things), next to the bars, not boxed so it isn't mistaken for a button */
     .tap-hint-line { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; font-size: 0.82rem; font-weight: 600; color: #1d4ed8; }
+    .tap-hint-line.bar-hint { margin: 16px 0 6px; }
+    .bar-hint .mouse-word { display: none; }
+    @media (hover: hover) and (pointer: fine) { .bar-hint .mouse-word { display: inline; } .bar-hint .touch-word { display: none; } }
     .tap-hint-line .hand { font-size: 1.05rem; line-height: 1; flex: 0 0 auto; }
     html.dark .tap-hint-line { color: #93c5fd; }
     /* Short labels for phones; long ones elsewhere */
@@ -422,6 +425,17 @@
     html.dark .tap-hint-line.swipe-hint { border-color: #334155; background: #243145; }
     .tap-hint-line.chart-swipe { justify-content: flex-end; margin: 6px 0 0; font-size: 0.78rem; }
     .chart-svg-wrap .hit { fill: transparent; } /* whole column is tappable, not just the coloured bar */
+    @media (min-width: 601px) and (max-width: 1000px) { /* tablets, narrow laptop windows, zoomed browsers: fit instead of scrolling */
+        table { min-width: 0; }
+        thead th { white-space: normal; vertical-align: bottom; padding: 10px 8px; }
+        tbody td { padding: 9px 8px; }
+        tbody td.notes { min-width: 200px; }
+    }
+    @media (min-width: 601px) and (max-width: 800px) { /* small tablets: short column names so the table fits */
+        .h-long { display: none; }
+        .h-short { display: inline; }
+        tbody td.notes { min-width: 180px; }
+    }
     @media (max-width: 600px) {
         .h-long { display: none; }
         .h-short { display: inline; }
@@ -1268,9 +1282,11 @@ function niceAxisMax(v) {
     return niceNormalized * magnitude;
 }
 
-function buildMonthChartSvg(days) {
-    const W = 900, H = 380;
-    const marginL = 72, marginR = 16, marginT = 28, marginB = 36; // 72 (was 58): room for bigger y-axis numbers on phones
+function buildMonthChartSvg(days, fitW) {
+    // fitW: phones only — draw at the card's real width (no sideways swipe); used when few days are shown
+    const fit = !!fitW;
+    const W = fit ? fitW : 900, H = fit ? 240 : 380;
+    const marginL = fit ? 44 : 72, marginR = fit ? 2 : 16, marginT = fit ? 18 : 28, marginB = fit ? 20 : 36; // fit: room for "75,000"; 72 (was 58): room for bigger y-axis numbers on phones
     const plotW = W - marginL - marginR;
     const plotH = H - marginT - marginB;
     const n = days.length;
@@ -1283,7 +1299,7 @@ function buildMonthChartSvg(days) {
         const val = niceMax / steps * i;
         const y = marginT + plotH - (val / niceMax * plotH);
         gridlines += `<line x1="${marginL}" y1="${y}" x2="${W - marginR}" y2="${y}" style="stroke:var(--c-grid)" stroke-width="1"/>`;
-        gridlines += `<text x="${marginL - 8}" y="${y + 3}" class="ax-y" style="fill:var(--c-axis-text)" text-anchor="end">${fmt(Math.round(val))}</text>`;
+        gridlines += `<text x="${marginL - (fit ? 4 : 8)}" y="${y + 3}" class="ax-y" style="fill:var(--c-axis-text)" text-anchor="end">${fmt(Math.round(val))}</text>`;
     }
 
     const slotW = plotW / n;
@@ -1313,7 +1329,7 @@ function buildMonthChartSvg(days) {
         }
     });
 
-    return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" style="min-width:600px;width:100%;height:auto;">
+    return `<div class="chart-svg-wrap"><svg viewBox="0 0 ${W} ${H}" ${fit ? 'class="fit" style="width:100%;height:auto;"' : 'style="min-width:600px;width:100%;height:auto;"'}>
         ${gridlines}
         ${bars}
         <line x1="${marginL}" y1="${marginT + plotH}" x2="${W - marginR}" y2="${marginT + plotH}" style="stroke:var(--c-axis)" stroke-width="1"/>
@@ -1366,11 +1382,17 @@ function renderMonthChart() {
         if (!agg) { card.innerHTML = filterNote + back + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
         const days = buildDailySeries(y, m);
         const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
+        // Phones: for a partly logged month, leave out the empty days after the last logged day; if that
+        // leaves 16 days or fewer, draw the chart at screen width so no sideways swipe is needed.
+        const cardW = card.clientWidth || 0;
+        const phone = cardW >= 290 && cardW < 600;
+        const shown = phone && agg.isPartial ? days.slice(0, lastLoggedDay) : days;
+        const fitW = phone && shown.length <= 16 ? cardW : 0;
         card.innerHTML = filterNote + back + `
             <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
             <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
             ${legend}
-            ${buildMonthChartSvg(days)}
+            ${buildMonthChartSvg(shown, fitW)}
             ${renderMonthInsight(y, m, agg, days)}`;
         return;
     }
@@ -1399,7 +1421,7 @@ function renderMonthChart() {
         <div class="chart-title">${title} · Water Supply by Month</div>
         <div class="chart-sub">Tanker + KWA + Rainwater, per month · number above each bar = that month's total in KL${anyPartial ? ' · * = month not fully logged' : ''}</div>
         ${legend}
-        <div class="tap-hint-line"><span class="hand" aria-hidden="true">👆</span>Tap any bar to see that month's figures and its daily chart</div>
+        <div class="tap-hint-line bar-hint"><span><span class="touch-word">Tap</span><span class="mouse-word">Click</span> any bar to see that month's figures and its daily chart</span></div>
         ${buildPeriodChartSvg(series, currentYear === 'ALL')}
         ${renderPeriodInsight(title, series)}`;
 }
