@@ -1116,8 +1116,8 @@ function applyFilters() {
     const narrowed = filtered.length !== yearScoped.length;
     rc.classList.toggle('filtered', narrowed);
     rc.innerHTML = narrowed
-        ? `<span class="n">${filtered.length}</span> <span class="of">of ${yearScoped.length} ${yearScoped.length === 1 ? 'day' : 'days'}</span>`
-        : `<span class="n">${yearScoped.length}</span> <span class="of">${yearScoped.length === 1 ? 'day' : 'days'}</span>`;
+        ? `<span class="n">${filtered.length}</span> <span class="of">of ${yearScoped.length} ${yearScoped.length === 1 ? 'Day' : 'Days'}</span>`
+        : `<span class="n">${yearScoped.length}</span> <span class="of">${yearScoped.length === 1 ? 'Day' : 'Days'}</span>`;
     document.getElementById('noResults').style.display = filtered.length === 0 ? 'block' : 'none';
     renderPeriodLabel();
     renderMonthChart(); // chart always shows the same period as the cards
