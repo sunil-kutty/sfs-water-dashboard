@@ -300,7 +300,7 @@
     .legend span { display: inline-flex; align-items: center; gap: 4px; }
     /* Daily Log: "Find days" panel (search) and the results card (count + How to read + table) */
     .find-panel { background: #e8edf5; border-radius: 12px; padding: 10px; margin: 20px auto 12px; }
-    .find-h { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; color: #4b5563; margin: 0 0 6px 2px; }
+    .find-h { font-size: 0.78rem; font-weight: 700; color: #4b5563; margin: 0 0 6px 2px; } /* "Find Days" in normal case: no extra letter spacing, a touch larger */
     .find-panel .controls { margin: 0; }
     .results-card { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); overflow: hidden; }
     .res-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #e5e7eb; }
@@ -649,7 +649,7 @@
     <!-- ===== Daily Log panel ===== -->
     <div class="panel active" id="panel-log">
         <div class="find-panel">
-            <div class="find-h">🔍 FIND DAYS</div>
+            <div class="find-h">🔍 Find Days</div>
             <div class="controls">
                 <input type="text" id="searchBox" placeholder="Search date or notes…">
                 <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
