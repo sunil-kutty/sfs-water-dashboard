@@ -1485,7 +1485,7 @@ function refreshLiveData() {
             const readAt = resp && resp.fetchedAt ? new Date(resp.fetchedAt) : null;
             const stamp = (readAt && !isNaN(readAt) ? readAt : new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                 .replace(/\b(am|pm)\b/i, m => m.toUpperCase());
-            setLiveStatus(`💧 Live data as of ${stamp} IST (${RECORDS.length} days total loaded, ${yearRangeLabel()})`, 'live');
+            setLiveStatus(`💧 Live data as of ${stamp} IST`, 'live');
         })
         .catch(err => {
             console.warn('Water supply sheet fetch failed.', err);
