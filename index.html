@@ -430,7 +430,15 @@
     .h-short { display: none; }
     .tap-hint-line.swipe-hint { margin: 0; padding: 8px 14px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; }
     html.dark .tap-hint-line.swipe-hint { border-color: #334155; background: #243145; }
-    .tap-hint-line.chart-swipe { justify-content: flex-end; margin: 6px 0 0; font-size: 0.78rem; }
+    .tap-hint-line.chart-swipe { justify-content: center; margin: 6px 0 0; font-size: 0.78rem; }
+    /* Soft shadow on whichever edge still has more to see; gone at each end (classes set by updateEdgeShade) */
+    .edge-shade { position: relative; }
+    .edge-shade::before, .edge-shade::after { content: ''; position: absolute; top: 0; bottom: 0; width: 24px; pointer-events: none; z-index: 4; opacity: 0; transition: opacity 0.15s ease; }
+    .edge-shade::before { left: var(--shade-left, 0px); background: linear-gradient(to right, rgba(15,23,42,0.18), transparent); } /* starts after the fixed Date column */
+    .edge-shade::after { right: 0; background: linear-gradient(to left, rgba(15,23,42,0.18), transparent); }
+    .edge-shade.more-left::before, .edge-shade.more-right::after { opacity: 1; }
+    html.dark .edge-shade::before { background: linear-gradient(to right, rgba(0,0,0,0.55), transparent); }
+    html.dark .edge-shade::after { background: linear-gradient(to left, rgba(0,0,0,0.55), transparent); }
     .chart-svg-wrap .hit { fill: transparent; } /* whole column is tappable, not just the coloured bar */
     @media (min-width: 601px) and (max-width: 1000px) { /* tablets, narrow laptop windows, zoomed browsers: fit instead of scrolling */
         table { min-width: 0; }
@@ -467,6 +475,16 @@
     .chart-back:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
     html.dark .chart-back { background: #172554; border-color: #1e40af; color: #93c5fd; }
     html.dark .chart-back:hover { background: #1e3a8a; }
+    /* Row above a daily chart: ‹ previous month · ↑ All months · next month › */
+    .chart-nav { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 10px; }
+    .chart-nav .chart-back { margin-bottom: 0; flex: 0 1 auto; justify-content: center; text-align: center; }
+    .chart-step { flex: 0 0 auto; min-width: 56px; min-height: 34px; padding: 0 10px; border: 1px solid #cbd5e1; background: #fff; color: #1d4ed8; border-radius: 10px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .chart-step:hover:not(:disabled) { background: #eff6ff; }
+    .chart-step:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+    .chart-step:disabled { color: #9ca3af; border-color: #e5e7eb; cursor: default; }
+    html.dark .chart-step { background: #1e293b; border-color: #475569; color: #93c5fd; }
+    html.dark .chart-step:hover:not(:disabled) { background: #243145; }
+    html.dark .chart-step:disabled { color: #475569; border-color: #334155; }
     .chart-legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 0.78rem; color: #374151; }
     .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
     .sw.tanker { background: var(--c-tanker); }
@@ -749,7 +767,7 @@
                 <dt><span class="badge warn">⚠</span></dt><dd>A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</dd>
             </dl>
         </div>
-        <div class="tap-hint-line swipe-hint" id="tableSwipeHint" hidden><span class="hand" aria-hidden="true">👉</span>Swipe sideways for more columns</div>
+        <div class="tap-hint-line swipe-hint" id="tableSwipeHint" hidden><span class="hand" aria-hidden="true">&#x2194;&#xFE0E;</span>Swipe sideways for more columns</div>
         <div class="table-scroll">
             <table id="logTable">
                 <thead>
@@ -1220,13 +1238,29 @@ function applyFilters() {
 function updateSwipeHints() {
     const ts = document.querySelector('.table-scroll'), th = document.getElementById('tableSwipeHint');
     if (ts && th && ts.clientWidth > 0) th.hidden = ts.scrollWidth <= ts.clientWidth + 2;
+    if (ts) updateEdgeShade(ts);
     const card = document.getElementById('monthChartCard');
     const wrap = card && card.querySelector('.chart-svg-wrap');
+    if (wrap) updateEdgeShade(wrap);
     let ch = card && card.querySelector('.chart-swipe');
     if (wrap && wrap.clientWidth > 0 && wrap.scrollWidth > wrap.clientWidth + 2) {
-        if (!ch) { wrap.insertAdjacentHTML('afterend', '<div class="tap-hint-line chart-swipe">Swipe for more<span class="hand" aria-hidden="true">👉</span></div>'); }
+        const what = card.querySelector('.chart-back') ? 'days' : 'months'; // daily chart has the back button
+        if (!ch) { wrap.parentElement.insertAdjacentHTML('afterend', `<div class="tap-hint-line chart-swipe"><span class="hand" aria-hidden="true">&#x2194;&#xFE0E;</span>Swipe sideways for more ${what}</div>`); }
     } else if (ch) ch.remove();
 }
+// Wraps a sideways-scrolling box once, then shows a soft shadow on the edge(s) that still have more
+function updateEdgeShade(sc) {
+    let sh = sc.parentElement;
+    if (!sh.classList.contains('edge-shade')) { sh = document.createElement('div'); sh.className = 'edge-shade'; sc.before(sh); sh.appendChild(sc); }
+    const d = sc.querySelector('th.col-date');
+    sh.style.setProperty('--shade-left', (d && getComputedStyle(d).position === 'sticky' ? d.offsetWidth : 0) + 'px');
+    sh.classList.toggle('more-left', sc.scrollLeft > 2);
+    sh.classList.toggle('more-right', sc.scrollLeft + sc.clientWidth < sc.scrollWidth - 2);
+}
+document.addEventListener('scroll', e => { // scroll doesn't bubble, so listen in the capture phase
+    const t = e.target;
+    if (t.classList && (t.classList.contains('table-scroll') || t.classList.contains('chart-svg-wrap'))) updateEdgeShade(t);
+}, true);
 
 // Says exactly which period/filters the cards and Supply mix cover; blue when narrowed
 function renderPeriodLabel() {
@@ -1405,7 +1439,15 @@ function renderMonthChart() {
         // One month: daily bars (unchanged)
         const y = Number(currentYear), m = Number(month);
         const agg = aggregateMonth(y, m);
-        const back = `<button type="button" class="chart-back">← All months of ${y}</button>`;
+        // ‹ previous · ↑ All months · next ›  — prev/next cross into the next year; grey when that month has no data
+        const stepBtn = (ty, tm, dir) => {
+            const name = MONTH_NAMES[tm - 1] + (ty !== y ? ' ’' + String(ty).slice(2) : '');
+            const has = !!aggregateMonth(ty, tm);
+            return `<button type="button" class="chart-step" data-ym="${ty}-${String(tm).padStart(2, '0')}"${has ? '' : ' disabled'} aria-label="${has ? 'Show ' : 'No data for '}${monthLabel(ty, tm)}">${dir < 0 ? '‹ ' + name : name + ' ›'}</button>`;
+        };
+        const back = `<div class="chart-nav">${m === 1 ? stepBtn(y - 1, 12, -1) : stepBtn(y, m - 1, -1)}`
+            + `<button type="button" class="chart-back">↑ All months of ${y}</button>`
+            + `${m === 12 ? stepBtn(y + 1, 1, 1) : stepBtn(y, m + 1, 1)}</div>`;
         if (!agg) { card.innerHTML = filterNote + back + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
         const days = buildDailySeries(y, m);
         const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
@@ -1740,8 +1782,16 @@ document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
         applyFilters();
         window.scrollBy(0, card.getBoundingClientRect().top - before);
     }
+    // ‹ Sep / Nov › beside it: same as picking that month, chart stays where it was on screen
+    function stepMonth(ym) {
+        const before = card.getBoundingClientRect().top;
+        drill(ym);
+        window.scrollBy(0, card.getBoundingClientRect().top - before);
+    }
     card.addEventListener('click', e => {
         if (e.target.closest('.chart-back')) { backToMonths(); return; }
+        const step = e.target.closest('.chart-step');
+        if (step) { if (!step.disabled) stepMonth(step.dataset.ym); return; }
         if (e.target.closest('.bar-pop-go')) { drill(openYm); return; }
         if (e.target.closest('.bar-pop-close')) { close(); return; }
         if (e.target.closest('.bar-pop')) return;
