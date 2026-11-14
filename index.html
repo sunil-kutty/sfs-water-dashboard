@@ -485,11 +485,14 @@
     html.dark .chart-step { background: #1e293b; border-color: #475569; color: #93c5fd; }
     html.dark .chart-step:hover:not(:disabled) { background: #243145; }
     html.dark .chart-step:disabled { color: #475569; border-color: #334155; }
-    .chart-legend { display: flex; gap: 16px; margin-bottom: 10px; font-size: 0.78rem; color: #374151; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; font-size: 0.78rem; color: #374151; }
     .chart-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+    .chart-legend > span { white-space: nowrap; } /* keep each swatch beside its label; items wrap to a new line instead of squeezing */
+
     .sw.tanker { background: var(--c-tanker); }
     .sw.rain { background: var(--c-rain); }
     .sw.kwa { background: var(--c-kwa); }
+    .sw.not-entered { background: none; border: 1.25px dashed var(--c-axis); box-sizing: border-box; }
     .chart-svg-wrap { width: 100%; overflow-x: auto; }
     /* Monthly chart text. The chart is drawn 900 wide and shrunk to fit, so on smaller screens the
        sizes below are raised to keep the text readable on screen (about 10-11 px). */
@@ -1367,9 +1370,13 @@ function buildMonthChartSvg(days, fitW) {
     const barW = Math.max(2, slotW - 4);
     const labelStride = n > 20 ? 2 : 1;
     let bars = '';
+    const notEnteredH = Math.min(plotH * 0.25, fit ? 36 : 60); // short dashed box: "no entry for this day", not "zero water"
     days.forEach((d, i) => {
         const x = marginL + i * slotW + (slotW - barW) / 2;
         let yCursor = marginT + plotH;
+        if (!d.logged) {
+            bars += `<rect x="${(x + 0.75).toFixed(1)}" y="${(yCursor - notEnteredH).toFixed(1)}" width="${Math.max(1, barW - 1.5).toFixed(1)}" height="${notEnteredH.toFixed(1)}" rx="2" style="fill:none;stroke:var(--c-axis)" stroke-width="1.25" stroke-dasharray="3 3"><title>Day ${d.day} — not entered</title></rect>`;
+        }
         [
             { v: d.tankerL, color: 'var(--c-tanker)', label: 'Tanker' },
             { v: d.kwaL, color: 'var(--c-kwa)', label: 'KWA' },
@@ -1451,16 +1458,28 @@ function renderMonthChart() {
         if (!agg) { card.innerHTML = filterNote + back + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
         const days = buildDailySeries(y, m);
         const lastLoggedDay = Math.max(...days.filter(d => d.logged).map(d => d.day));
-        // Phones: for a partly logged month, leave out the empty days after the last logged day; if that
-        // leaves 16 days or fewer, draw the chart at screen width so no sideways swipe is needed.
+        // Current month (all screens): show days up to today, so days not entered yet appear as dashed boxes
+        // instead of the chart quietly stopping at the last entered day. Days after today are left out.
+        // Other partly logged months, phones only: leave out the empty days after the last logged day.
+        // Phones: if 16 days or fewer are shown, draw the chart at screen width so no sideways swipe is needed.
+        const now = new Date();
+        const isCurrent = now.getFullYear() === y && now.getMonth() + 1 === m;
+        const lastShown = isCurrent ? Math.max(now.getDate(), lastLoggedDay) : null;
         const cardW = card.clientWidth || 0;
         const phone = cardW >= 290 && cardW < 600;
-        const shown = phone && agg.isPartial ? days.slice(0, lastLoggedDay) : days;
+        const shown = isCurrent ? days.slice(0, lastShown) : (phone && agg.isPartial ? days.slice(0, lastLoggedDay) : days);
         const fitW = phone && shown.length <= 16 ? cardW : 0;
+        const mon = MONTH_NAMES[m - 1];
+        const gapTxt = isCurrent && lastShown > lastLoggedDay
+            ? ` · ${lastLoggedDay + 1 === lastShown ? lastShown : (lastLoggedDay + 1) + '–' + lastShown} ${mon} not entered yet` : '';
+        const subNote = isCurrent ? ` — data entered up to ${lastLoggedDay} ${mon}${gapTxt}`
+            : agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : '';
+        const legendNE = shown.some(d => !d.logged)
+            ? legend.replace('</div>', `<span><span class="sw not-entered"></span>Not entered${isCurrent ? ' yet' : ''}</span></div>`) : legend;
         card.innerHTML = filterNote + back + `
             <div class="chart-title">${monthLabel(y, m)} · Daily Water Supply</div>
-            <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${agg.isPartial ? ` — partial month, data logged through day ${lastLoggedDay}` : ''}</div>
-            ${legend}
+            <div class="chart-sub">Tanker + KWA + Rainwater, per day (litres) · number above each bar = that day's total in KL${subNote}</div>
+            ${legendNE}
             ${buildMonthChartSvg(shown, fitW)}
             ${renderMonthInsight(y, m, agg, days)}`;
         return;
