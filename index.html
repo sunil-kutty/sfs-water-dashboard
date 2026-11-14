@@ -62,9 +62,9 @@
         letter-spacing: 0.5px;
         padding: 2px 8px;
         border-radius: 10px;
-        background: #fbbf24;
-        color: #422006;
-        border: 1px solid #fbbf24;
+        background: #ffffff; /* neutral white tag: purple/blue/green/red/amber all carry meaning on this page (amber = flagged) */
+        color: #1e3a8a;
+        border: 1px solid #ffffff;
     }
     header p { margin-top: 6px; font-size: 0.85rem; opacity: 0.9; }
     .live-status {
@@ -625,6 +625,7 @@
     html.dark .stat-card, html.dark .table-scroll, html.dark .compare-wrap { background: #1e293b; box-shadow: 0 0 0 1px rgba(148,163,184,0.12), 0 1px 4px rgba(0,0,0,0.5); } /* faint edge: shadows don't show on dark */
     html.dark .live-status.live { background: rgba(15,23,42,0.55); color: #bfdbfe; } /* no bright white pill in dark */
     html.dark .live-status.offline { background: rgba(15,23,42,0.55); color: #fca5a5; }
+    html.dark .beta-badge { background: #dbeafe; color: #172554; border-color: #dbeafe; } /* soft ice-blue, not glaring white; not amber (amber = flagged) */
     html.dark .stat-card .num { color: #60a5fa; }
     html.dark .stats[data-state] .stat-card .num, html.dark td.state-cell { color: #94a3b8; }
     html.dark .stat-card .label, html.dark .mix-title, html.dark .legend,
