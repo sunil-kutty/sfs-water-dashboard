@@ -46,7 +46,7 @@
         padding-bottom: 40px;
     }
     header {
-        background: linear-gradient(135deg, #1e3a8a, #2563eb 60%, #3b82f6);
+        background: linear-gradient(135deg, #1e3a8a, #2563eb 60%, #2c6bec); /* light end darkened (was #3b82f6) so white text stays ≥4.5:1 */
         color: #fff;
         padding: 28px 20px 22px;
         text-align: center;
@@ -69,7 +69,7 @@
     header p { margin-top: 6px; font-size: 0.85rem; opacity: 0.9; }
     /* Tagline (bold, clearly smaller than the title) + two short fact lines, evenly spaced */
     header p.tagline { font-size: 0.95rem; font-weight: 600; opacity: 1; }
-    header p.sources { margin-top: 2px; font-size: 0.8rem; opacity: 0.85; letter-spacing: 0.2px; }
+    header p.sources { margin-top: 2px; font-size: 0.8rem; opacity: 1; letter-spacing: 0.2px; } /* full strength: was 85% (3.1–4.2:1) */
     .live-status {
         margin-top: 10px;
         display: inline-block;
@@ -87,7 +87,7 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        font-size: 0.72rem;
+        font-size: 0.85rem; /* same size as the other buttons (was 0.72rem) */
         padding: 4px 12px;
         border-radius: 12px;
         border: 1px solid rgba(255,255,255,0.4);
@@ -108,7 +108,7 @@
     }
     .theme-switch button {
         display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; color: #fff;
-        font-size: 0.72rem; padding: 4px 10px; cursor: pointer; letter-spacing: 0.2px; min-height: 26px;
+        font-size: 0.85rem; padding: 4px 10px; cursor: pointer; letter-spacing: 0.2px; min-height: 26px; /* same size as the other buttons (was 0.72rem) */
     }
     .theme-switch button + button { border-left: 1px solid rgba(255,255,255,0.25); }
     .theme-switch button svg { width: 12px; height: 12px; flex: 0 0 auto; }
@@ -117,9 +117,9 @@
     html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @media (pointer: coarse) { /* touch screens: bigger targets for thumbs (were 24–30 px tall); mouse users see no change */
-        .refresh-btn { min-height: 36px; padding: 6px 7px; gap: 4px; border-radius: 18px; font-size: 0.78rem; } /* side padding 7: narrower, same height */
+        .refresh-btn { min-height: 36px; padding: 6px 7px; gap: 4px; border-radius: 18px; font-size: 0.85rem; } /* side padding 7: narrower, same height */
         .theme-switch { border-radius: 18px; }
-        .theme-switch button { min-height: 36px; padding: 6px 5px; gap: 3px; font-size: 0.78rem; } /* side padding 5 */
+        .theme-switch button { min-height: 36px; padding: 6px 5px; gap: 3px; font-size: 0.85rem; } /* side padding 5 */
         .year-tabs .year-btn { min-height: 40px; padding: 8px 18px; } /* .year-tabs prefix: the base .year-btn rule comes later in the file */
         .scope-row #monthSelect { min-height: 40px; }
     }
@@ -141,7 +141,7 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
         gap: 14px;
-        max-width: 760px;
+        max-width: none; /* same width as the tabs, Find Days and table below (was 760 px) */
         margin: 20px auto 0;
     }
     .stat-card {
@@ -160,12 +160,12 @@
     /* Supply-mix donut card (6th stat card): 1 row of 6 on wide screens, 3+3 on tablets, 2 per row on phones */
     .stat-card.mix { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 8px; padding: 8px; text-align: left; } /* wrap = legend drops under the donut on very narrow phones instead of spilling out */
     .mix-donut { flex: 0 0 auto; width: 46px; height: 46px; }
-    .mix-legend { font-size: 0.7rem; color: #374151; line-height: 1.5; white-space: nowrap; }
+    .mix-legend { font-size: 0.72rem; color: #374151; line-height: 1.5; white-space: nowrap; }
     .mix-legend .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: 0; }
     .mix-legend b { font-weight: 700; }
     .mix-title { font-size: 0.72rem; color: #6b7280; margin-bottom: 1px; } /* same size and colour as the other cards' labels (e.g. "Tanker Loads (Total)") */
     @media (min-width: 900px) { /* 6 in one row only when each card has room */
-        .stats { max-width: 1000px; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.6fr); }
+        .stats { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.6fr); }
     }
     @media (min-width: 481px) and (max-width: 899px) {
         .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -227,7 +227,7 @@
         border: 1px solid #d1d5db;
         background: #fff;
         color: #374151;
-        font-size: 0.8rem;
+        font-size: 0.85rem; /* same size as the other buttons (was 0.8rem) */
         font-weight: 700;
         cursor: pointer;
     }
@@ -304,7 +304,7 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        font-size: 0.82rem;
+        font-size: 0.85rem;
         color: #4b5563;
         background: #fff;
         padding: 10px 12px;
@@ -333,7 +333,7 @@
     .res-count { font-size: 0.95rem; font-weight: 700; color: #1f2937; }
     .res-count .n { color: #1d4ed8; font-size: 1.05rem; }
     .res-count .of { font-weight: 400; color: #4b5563; font-size: 0.85rem; }
-    .howto-btn { border: none; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: #1d4ed8; cursor: pointer; padding: 4px 2px; white-space: nowrap; }
+    .howto-btn { border: none; background: none; font: inherit; font-size: 0.85rem; font-weight: 600; color: #1d4ed8; cursor: pointer; padding: 12px 6px; margin: -8px -4px; white-space: nowrap; } /* 40 px tall tap area; the negative margin keeps the row height unchanged */
     .howto-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 6px; }
     .howto-caret { font-size: 0.7rem; }
     .howto-panel { border-bottom: 1px solid #e5e7eb; background: #f8fafc; }
@@ -382,7 +382,7 @@
 
     .badge {
         display: inline-block;
-        font-size: 0.68rem;
+        font-size: 0.72rem; /* was 0.68rem (10.9 px) */
         font-weight: 700;
         padding: 2px 7px;
         border-radius: 8px;
@@ -405,7 +405,7 @@
     }
 
     .compare-wrap { background: #fff; border-radius: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); padding: 20px; margin-top: 10px; }
-    .scope-row #monthSelect { padding: 6px 30px 6px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; width: auto; color: inherit; }
+    .scope-row #monthSelect { padding: 6px 30px 6px 14px; border-radius: 999px; font-size: 0.85rem; font-weight: 700; width: auto; color: inherit; }
     .chart-filter-note { font-size: 0.75rem; color: #1e3a8a; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 10px; margin-bottom: 12px; }
     html.dark .chart-filter-note { background: #172554; border-color: #1e40af; color: #bfdbfe; }
     #monthChartCard { position: relative; }
@@ -482,19 +482,19 @@
         html.dark thead th.col-date { background: #1e40af; }
         html.dark tbody tr.anomaly-row td.col-date { background: #333536; } /* solid version of the dark flagged-row tint */
         .compare-wrap { padding: 16px 14px; }
-        .chart-svg-wrap svg.fit .ax-y { font-size: 9px; }
-        .chart-svg-wrap svg.fit .ax-x { font-size: 9.5px; }
-        .chart-svg-wrap svg.fit .bar-kl { font-size: 8.5px; }
+        .chart-svg-wrap svg.fit .ax-y { font-size: 11px; } /* was 9 px */
+        .chart-svg-wrap svg.fit .ax-x { font-size: 11px; } /* was 9.5 px */
+        .chart-svg-wrap svg.fit .bar-kl { font-size: 8.5px; } /* unchanged: 9 px already makes neighbouring month totals touch */
     }
-    .chart-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; border: 1px solid #cbd5e1; background: #fff; color: #1d4ed8; border-radius: 999px; padding: 8px 14px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; } /* ~33px tall: easy to tap on phones. Plain like ‹ Oct / Dec ›: a blue fill on this page means "selected / filter on" */
+    .chart-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; border: 1px solid #cbd5e1; background: #fff; color: #1d4ed8; border-radius: 999px; padding: 8px 14px; min-height: 40px; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; } /* 40px tall, same as ‹ Oct / Dec ›: easy to tap on phones. Plain like ‹ Oct / Dec ›: a blue fill on this page means "selected / filter on" */
     .chart-back:hover { background: #eff6ff; }
     .chart-back:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
     html.dark .chart-back { background: #1e293b; border-color: #475569; color: #93c5fd; }
     html.dark .chart-back:hover { background: #243145; }
     /* Row above a daily chart: ‹ previous month · ↑ All months · next month › */
-    .chart-nav { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 10px; }
+    .chart-nav { display: flex; align-items: stretch; justify-content: space-between; gap: 6px; margin-bottom: 10px; } /* stretch: if the middle label wraps on a small phone, ‹ › grow to the same height */
     .chart-nav .chart-back { margin-bottom: 0; flex: 0 1 auto; justify-content: center; text-align: center; }
-    .chart-step { flex: 0 0 auto; min-width: 56px; min-height: 34px; padding: 0 10px; border: 1px solid #cbd5e1; background: #fff; color: #1d4ed8; border-radius: 10px; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .chart-step { flex: 0 0 auto; min-width: 56px; min-height: 40px; padding: 0 12px; border: 1px solid #cbd5e1; background: #fff; color: #1d4ed8; border-radius: 999px; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
     .chart-step:hover:not(:disabled) { background: #eff6ff; }
     .chart-step:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
     .chart-step:disabled { color: #9ca3af; border-color: #e5e7eb; cursor: default; }
@@ -546,8 +546,8 @@
     .insight-list li { padding: 1px 0; }
     .insight-box .nw { white-space: nowrap; } /* on narrow phones, lines break only at the ' · ' separators, never inside a figure */
     .insight-list .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
-    .insight-note { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
-    .chart-footer-note { font-size: 0.68rem; color: #6b7280; margin-top: 8px; } /* 4.83:1 on the white card (was 2.54:1) */
+    .insight-note { font-size: 0.72rem; opacity: 0.8; margin-top: 2px; }
+    .chart-footer-note { font-size: 0.72rem; color: #6b7280; margin-top: 8px; } /* 4.83:1 on the white card (was 2.54:1) */
 
     .note-box {
         margin: 16px auto 0;
@@ -562,7 +562,7 @@
     .caveat-count { font-weight: 600; }
     /* "Known data issues" fold-out: same amber box, closed by default */
     .note-box.issues { padding: 0; }
-    .issues-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: none; background: none; font: inherit; font-size: 0.8rem; font-weight: 600; color: inherit; cursor: pointer; padding: 10px 14px; text-align: left; }
+    .issues-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: none; background: none; font: inherit; font-size: 0.85rem; font-weight: 600; color: inherit; cursor: pointer; padding: 10px 14px; text-align: left; }
     .issues-btn:focus-visible { outline: 2px solid #b45309; outline-offset: -2px; border-radius: 10px; }
     .issues-n { font-weight: 400; opacity: 0.85; }
     .issues-caret { font-size: 0.7rem; flex: 0 0 auto; }
@@ -601,11 +601,11 @@
     }
     .flag-modal-close {
         position: absolute;
-        top: 10px;
-        right: 12px;
+        top: 6px;
+        right: 8px;
         /* a round grey button, so the close "×" stands apart from the amber text */
-        width: 32px;
-        height: 32px;
+        width: 40px; /* was 32 px */
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -620,6 +620,7 @@
     }
     .flag-modal-close:hover { background: #d1d5db; color: #111827; }
     .flag-modal-close:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+    .stat-card.anomaly:focus-visible { outline: 2px solid #b45309; outline-offset: 2px; }
     .flag-modal > strong { display: block; margin: 0 28px 10px 0; font-size: 0.95rem; }
     .flag-modal ul { margin: 0; padding-left: 20px; }
     .flag-modal li { margin-bottom: 8px; }
@@ -647,7 +648,7 @@
         select, label.chk { width: 100%; }
         /* "Showing data for" on phones: the choices sit in one soft panel (same tint as "Find Days");
            year row, month box and Totals box share one width (300 px, centred) */
-        .filter-panel { background: #e6edf7; border: 1px solid #d5dfec; border-radius: 18px; padding: 12px 10px; margin-top: 14px; }
+        .filter-panel { background: #e6edf7; border: 1px solid #d5dfec; border-radius: 18px; padding: 12px 10px; margin-top: 16px; }
         html.dark .filter-panel { background: #15203a; border-color: #26344f; }
         .filter-panel .scope-row { margin-top: 0; }
         .scope-row { row-gap: 6px; }
@@ -658,13 +659,15 @@
         html.dark .scope-row .scope-label { color: #e2e8f0; }
         .year-tabs, .scope-row #monthSelect, .period-label { width: min(100%, 300px); margin-left: auto; margin-right: auto; }
         /* Totals line: plain heading of the cards below; turns into the blue box with ✕ Clear when a filter is on */
-        .period-row { margin-top: 14px; padding: 0; }
+        .period-row { margin-top: 16px; padding: 0; }
         .period-label { width: min(calc(100% - 22px), 300px); min-height: 40px; border-color: #d1d5db; border-radius: 20px; } /* 22 px = panel padding + border, so it matches the rows inside the panel on small phones too */
         .period-row .period-label:not(.filtered) { background: none; border-color: transparent; min-height: 0; padding-top: 2px; padding-bottom: 2px; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; } /* section heading of the results, in the header's navy so it reads with the blue card numbers */
         html.dark .period-row .period-label:not(.filtered) { color: #93c5fd; }
         /* Cards closer together (width unchanged) */
         .stats { margin-top: 6px; gap: 10px; } /* was 20 px above, 14 px between */
         .stat-card { padding-top: 8px; padding-bottom: 8px; } /* was 10 px */
+        .tabs { margin-top: 16px; } /* one 16 px gap between the main sections (was 20) */
+        .find-panel { margin-top: 16px; }
     }
     /* ---------- Colours shared by CSS and the charts (light = same values as before) ---------- */
     :root {
@@ -773,7 +776,7 @@
         <div class="stat-card"><div class="num" id="statTanker">…</div><div class="label">Tanker Loads (Total)</div></div>
         <div class="stat-card"><div class="num" id="statRain">…</div><div class="label">Rainwater (L)</div></div>
         <div class="stat-card"><div class="num" id="statKwa">…</div><div class="label">KWA Water (L)</div></div>
-        <div class="stat-card anomaly" title="Days where one value in the source sheet looked wrong. A flagged day is still counted — only the wrong value is handled: a broken Tanker Actuals reading is ignored (tankers are counted as loads × 12,000 L), pool water entered as Rainwater is left out, and a negative KWA reading is left out. Tap to see each day."><div class="num" id="statAnomaly">…</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
+        <div class="stat-card anomaly" role="button" tabindex="0" aria-haspopup="dialog" title="Days where one value in the source sheet looked wrong. A flagged day is still counted — only the wrong value is handled: a broken Tanker Actuals reading is ignored (tankers are counted as loads × 12,000 L), pool water entered as Rainwater is left out, and a negative KWA reading is left out. Tap to see each day."><div class="num" id="statAnomaly">…</div><div class="label">Flagged Entries</div><div class="tap-hint">Tap to see what's flagged</div></div>
         <div class="stat-card mix" id="mixCard" title="Share of total water supplied in the period shown — same totals as the cards (Tanker = loads × 12,000 L)">
             <svg class="mix-donut" id="mixDonut" viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="15.9155" fill="none" style="stroke:var(--c-ring)" stroke-width="7"/></svg>
             <div class="mix-legend" id="mixLegend"><div class="mix-title">Supply mix</div><div>Loading…</div></div>
@@ -787,7 +790,7 @@
 
     <!-- Flagged-entries popup: kept outside both tab panels so the Flagged Entries card opens it from either tab -->
     <div class="flag-modal-overlay" id="flagModalOverlay">
-        <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true">
+        <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true" aria-label="Flagged entries">
             <button class="flag-modal-close" id="flagModalClose" aria-label="Close">&times;</button>
             <div id="flagModalBody"></div>
         </div>
@@ -1128,13 +1131,18 @@ function buildFlagModalHtml(records) {
     return `<strong>${flagged.length} flagged ${flagged.length === 1 ? 'entry' : 'entries'} in this view — what it means:</strong><ul>${items}</ul>${moreNote}`;
 }
 
+let flagModalOpener = null; // where focus goes back to when the popup closes
 function openFlagModal() {
+    flagModalOpener = document.activeElement;
     document.getElementById('flagModalBody').innerHTML = buildFlagModalHtml(lastFilteredRecords);
     document.getElementById('flagModalOverlay').classList.add('open');
+    document.getElementById('flagModalClose').focus(); // keyboard and screen-reader users land inside the popup
 }
 
 function closeFlagModal() {
     document.getElementById('flagModalOverlay').classList.remove('open');
+    if (flagModalOpener && document.body.contains(flagModalOpener)) flagModalOpener.focus();
+    flagModalOpener = null;
 }
 
 
@@ -1891,6 +1899,9 @@ document.getElementById('anomalyOnly').addEventListener('change', applyFilters);
 })();
 document.getElementById('refreshBtn').addEventListener('click', refreshLiveData);
 document.querySelector('.stat-card.anomaly').addEventListener('click', openFlagModal);
+document.querySelector('.stat-card.anomaly').addEventListener('keydown', e => { // Enter / Space open it, like a button
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFlagModal(); }
+});
 document.getElementById('flagModalClose').addEventListener('click', closeFlagModal);
 document.getElementById('flagModalOverlay').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeFlagModal();
