@@ -28,9 +28,9 @@
 <title>SD Water Supply Dashboard (Secure)</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%232563eb' d='M16 2c-5 8-10 13.5-10 19a10 10 0 0020 0c0-5.5-5-11-10-19z'/%3E%3C/svg%3E">
-<meta name="description" content="Live daily water supply tracker for SD — Tanker, Rainwater &amp; KWA figures from 2025 onward, sourced from the society's Google Sheet.">
+<meta name="description" content="Where the water comes from — Tanker · KWA · Rainwater. Daily data from Jan 2025 onwards, live from the society's Google Sheet.">
 <meta property="og:title" content="SD Water Supply Dashboard">
-<meta property="og:description" content="Live daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025 onward.">
+<meta property="og:description" content="Where the water comes from — Tanker · KWA · Rainwater. Daily data from Jan 2025 onwards.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sunil-kutty.github.io/sfs-water-dashboard/">
 <style>
@@ -67,6 +67,9 @@
         border: 1px solid #ffffff;
     }
     header p { margin-top: 6px; font-size: 0.85rem; opacity: 0.9; }
+    /* Tagline (bold, clearly smaller than the title) + two short fact lines, evenly spaced */
+    header p.tagline { font-size: 0.95rem; font-weight: 600; opacity: 1; }
+    header p.sources { margin-top: 2px; font-size: 0.8rem; opacity: 0.85; letter-spacing: 0.2px; }
     .live-status {
         margin-top: 10px;
         display: inline-block;
@@ -696,7 +699,9 @@
 
 <header>
     <h1><span class="h1-text">SD Water Supply Dashboard<span class="beta-badge" title="Still being refined — layout, wording and features may change">BETA</span></span></h1>
-    <p>Daily water supply tracker — Tanker, Rainwater &amp; KWA · 2025 onward</p>
+    <p class="tagline">Where the water comes from</p>
+    <p class="sources">Tanker · KWA · Rainwater</p>
+    <p class="sources">Daily data from Jan 2025 onwards</p>
     <div class="live-status" id="liveStatus">Loading live data…</div>
     <button class="refresh-btn" id="refreshBtn" title="Fetch the latest water supply data via the Apps Script Web App">
         <span class="spin">⟳</span> <span id="refreshBtnLabel">Refresh</span>
