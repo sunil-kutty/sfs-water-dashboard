@@ -250,6 +250,7 @@
         cursor: pointer;
     }
     .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .tabs .tab-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 1 150px; min-height: 40px; } /* both tabs the same size; calendar icon and words on one line */
     .cal-icon {
         display: inline-flex;
         flex-direction: column;
@@ -258,8 +259,8 @@
         border-radius: 3px;
         overflow: hidden;
         border: 1.3px solid currentColor;
-        vertical-align: -3px;
-        margin-right: 3px;
+        vertical-align: 0;
+        margin-right: 0; /* spacing comes from the tab's gap */
     }
     .cal-icon-top { height: 4px; background: currentColor; }
     .cal-icon-num {
@@ -652,7 +653,9 @@
         .scope-row { row-gap: 6px; }
         .year-tabs { display: flex; flex-wrap: wrap; gap: 6px; } /* year buttons fill one row; wraps neatly if more years are added */
         .scope-row .year-tabs .year-btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; } /* each takes the width its label needs, so "2025–2026 combined" fits even at 320 px */
-        .scope-row #monthSelect { text-align-last: center; }
+        .scope-row #monthSelect { padding-left: 30px; padding-right: 30px; text-align: center; text-align-last: center; } /* equal padding both sides, so "All Months" sits exactly in the middle */
+        .scope-row .scope-label { font-size: 0.85rem; color: #374151; } /* same as the "Totals for" heading: the two section headings match */
+        html.dark .scope-row .scope-label { color: #cbd5e1; }
         .year-tabs, .scope-row #monthSelect, .period-label { width: min(100%, 300px); margin-left: auto; margin-right: auto; }
         /* Totals line: plain heading of the cards below; turns into the blue box with ✕ Clear when a filter is on */
         .period-row { margin-top: 14px; padding: 0; }
@@ -1218,7 +1221,7 @@ function populateYearTabs() {
     const yearButtons = years.map(y =>
         `<button class="year-btn${String(y) === currentYear ? ' active' : ''}" data-year="${y}">${y}</button>`
     ).join('');
-    const allButton = `<button class="year-btn${currentYear === 'ALL' ? ' active' : ''}" data-year="ALL" title="Totals for ${years.length > 1 ? years.slice().reverse().join(', ') + ' added together' : 'every year loaded'} (only years logged in the sheet from 2025 onward)">${years.length > 1 ? yearRangeLabel() + ' combined' : 'All loaded'}</button>`; // label built from the data so it never implies years that aren't loaded
+    const allButton = `<button class="year-btn${currentYear === 'ALL' ? ' active' : ''}" data-year="ALL" title="Totals for ${years.length > 1 ? years.slice().reverse().join(', ') + ' added together' : 'every year loaded'} (only years logged in the sheet from 2025 onward)">${years.length > 1 ? yearRangeLabel() + ' Combined' : 'All loaded'}</button>`; // label built from the data so it never implies years that aren't loaded
     container.innerHTML = yearButtons + allButton;
     container.querySelectorAll('.year-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1550,7 +1553,7 @@ function renderMonthChart() {
     });
     lastMonthSeries = {};
     series.forEach(s => { if (s.logged) lastMonthSeries[`${s.y}-${String(s.m).padStart(2, '0')}`] = s; });
-    const title = currentYear === 'ALL' ? `${yearRangeLabel()} combined` : currentYear;
+    const title = currentYear === 'ALL' ? `${yearRangeLabel()} Combined` : currentYear;
     const anyPartial = series.some(s => s.logged && s.partial);
     card.innerHTML = filterNote + `
         <div class="chart-title">${title} · Water Supply by Month</div>
