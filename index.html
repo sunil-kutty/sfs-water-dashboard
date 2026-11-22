@@ -117,9 +117,9 @@
     html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @media (pointer: coarse) { /* touch screens: bigger targets for thumbs (were 24–30 px tall); mouse users see no change */
-        .refresh-btn { min-height: 36px; padding: 6px 10px; border-radius: 18px; font-size: 0.78rem; } /* side padding 10 (was 14): narrower, same height */
+        .refresh-btn { min-height: 36px; padding: 6px 7px; gap: 4px; border-radius: 18px; font-size: 0.78rem; } /* side padding 7: narrower, same height */
         .theme-switch { border-radius: 18px; }
-        .theme-switch button { min-height: 36px; padding: 6px 8px; gap: 3px; font-size: 0.78rem; } /* side padding 8 (was 12) */
+        .theme-switch button { min-height: 36px; padding: 6px 5px; gap: 3px; font-size: 0.78rem; } /* side padding 5 */
         .year-tabs .year-btn { min-height: 40px; padding: 8px 18px; } /* .year-tabs prefix: the base .year-btn rule comes later in the file */
         .scope-row #monthSelect { min-height: 40px; }
     }
@@ -644,13 +644,23 @@
         .controls { flex-direction: column; align-items: stretch; }
         #searchBox { min-width: 0; }
         select, label.chk { width: 100%; }
-        /* "Showing data for" section on phones: one column as wide as the cards, tighter gaps */
-        .scope-row { row-gap: 6px; } /* was 10 px */
-        .year-tabs { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; } /* year buttons fill one row edge to edge; wraps neatly if more years are added */
+        /* "Showing data for" on phones: the choices sit in one soft panel (same tint as "Find Days");
+           year row, month box and Totals box share one width (300 px, centred) */
+        .filter-panel { background: #e6edf7; border: 1px solid #d5dfec; border-radius: 18px; padding: 12px 10px; margin-top: 14px; }
+        html.dark .filter-panel { background: #15203a; border-color: #26344f; }
+        .filter-panel .scope-row { margin-top: 0; }
+        .scope-row { row-gap: 6px; }
+        .year-tabs { display: flex; flex-wrap: wrap; gap: 6px; } /* year buttons fill one row; wraps neatly if more years are added */
         .scope-row .year-tabs .year-btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; } /* each takes the width its label needs, so "2025–2026 combined" fits even at 320 px */
-        .scope-row #monthSelect { width: 100%; text-align-last: center; }
-        .period-row { margin-top: 8px; padding: 0; } /* was 14 px gap and 4 px side inset */
-        .period-label { width: 100%; }
+        .scope-row #monthSelect { text-align-last: center; }
+        .year-tabs, .scope-row #monthSelect, .period-label { width: min(100%, 300px); margin-left: auto; margin-right: auto; }
+        /* Totals line: plain heading of the cards below; turns into the blue box with ✕ Clear when a filter is on */
+        .period-row { margin-top: 14px; padding: 0; }
+        .period-label { width: min(calc(100% - 22px), 300px); min-height: 40px; border-color: #d1d5db; border-radius: 20px; } /* 22 px = panel padding + border, so it matches the rows inside the panel on small phones too */
+        .period-row .period-label:not(.filtered) { background: none; border-color: transparent; min-height: 0; padding-top: 2px; padding-bottom: 2px; font-weight: 600; }
+        /* Cards closer together (width unchanged) */
+        .stats { margin-top: 6px; gap: 10px; } /* was 20 px above, 14 px between */
+        .stat-card { padding-top: 8px; padding-bottom: 8px; } /* was 10 px */
     }
     /* ---------- Colours shared by CSS and the charts (light = same values as before) ---------- */
     :root {
@@ -741,6 +751,7 @@
 
 <div class="wrap">
 
+    <div class="filter-panel">
     <div class="scope-row">
         <span class="scope-label">Showing data for:</span>
         <div class="year-tabs" id="yearTabs"></div>
@@ -749,6 +760,7 @@
         </select>
     </div>
 
+    </div>
     <div class="period-row"><div class="period-label" id="periodLabel" role="status" aria-live="polite">Loading data…</div></div>
 
     <div class="stats" id="statsBox" data-state="loading">
