@@ -740,6 +740,14 @@
         <button class="tab-btn" data-tab="compare">📊 Monthly Chart</button>
     </div>
 
+    <!-- Flagged-entries popup: kept outside both tab panels so the Flagged Entries card opens it from either tab -->
+    <div class="flag-modal-overlay" id="flagModalOverlay">
+        <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true">
+            <button class="flag-modal-close" id="flagModalClose" aria-label="Close">&times;</button>
+            <div id="flagModalBody"></div>
+        </div>
+    </div>
+
     <!-- ===== Daily Log panel ===== -->
     <div class="panel active" id="panel-log">
         <div class="find-panel">
@@ -747,13 +755,6 @@
             <div class="controls">
                 <input type="text" id="searchBox" placeholder="Search by Date or Notes…">
                 <label class="chk"><input type="checkbox" id="anomalyOnly"> Flagged entries only</label>
-            </div>
-        </div>
-
-        <div class="flag-modal-overlay" id="flagModalOverlay">
-            <div class="flag-modal" id="flagModal" role="dialog" aria-modal="true">
-                <button class="flag-modal-close" id="flagModalClose" aria-label="Close">&times;</button>
-                <div id="flagModalBody"></div>
             </div>
         </div>
 
@@ -1376,6 +1377,8 @@ function buildMonthChartSvg(days, fitW) {
         let yCursor = marginT + plotH;
         if (!d.logged) {
             bars += `<rect x="${(x + 0.75).toFixed(1)}" y="${(yCursor - notEnteredH).toFixed(1)}" width="${Math.max(1, barW - 1.5).toFixed(1)}" height="${notEnteredH.toFixed(1)}" rx="2" style="fill:none;stroke:var(--c-axis)" stroke-width="1.25" stroke-dasharray="3 3"><title>Day ${d.day} — not entered</title></rect>`;
+            // grey "?" where a real bar shows its KL number: value not known yet (grey, not amber = flagged)
+            bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${(yCursor - notEnteredH - 4).toFixed(1)}" class="bar-kl" style="fill:var(--c-day);font-weight:700" text-anchor="middle">?</text>`;
         }
         [
             { v: d.tankerL, color: 'var(--c-tanker)', label: 'Tanker' },
