@@ -771,7 +771,7 @@
                 <dt><span class="badge warn">⚠</span></dt><dd>A value in the source sheet looked wrong — the day is still counted (tap Flagged Entries to see what was done)</dd>
             </dl>
         </div>
-        <div class="tap-hint-line swipe-hint" id="tableSwipeHint" hidden><span class="hand" aria-hidden="true">&#x2194;&#xFE0E;</span>Swipe sideways for more columns</div>
+        <div class="tap-hint-line swipe-hint" id="tableSwipeHint" hidden><span class="hand" aria-hidden="true">&#x2194;&#xFE0E;</span>Swipe the table sideways for more columns</div>
         <div class="table-scroll">
             <table id="logTable">
                 <thead>
@@ -1249,7 +1249,7 @@ function updateSwipeHints() {
     let ch = card && card.querySelector('.chart-swipe');
     if (wrap && wrap.clientWidth > 0 && wrap.scrollWidth > wrap.clientWidth + 2) {
         const what = card.querySelector('.chart-back') ? 'days' : 'months'; // daily chart has the back button
-        if (!ch) { wrap.parentElement.insertAdjacentHTML('afterend', `<div class="tap-hint-line chart-swipe"><span class="hand" aria-hidden="true">&#x2194;&#xFE0E;</span>Swipe sideways for more ${what}</div>`); }
+        if (!ch) { wrap.parentElement.insertAdjacentHTML('afterend', `<div class="tap-hint-line chart-swipe"><span class="hand" aria-hidden="true">&#x2194;&#xFE0E;</span>Swipe the chart sideways for more ${what}</div>`); }
     } else if (ch) ch.remove();
 }
 // Wraps a sideways-scrolling box once, then shows a soft shadow on the edge(s) that still have more
