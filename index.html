@@ -133,6 +133,11 @@
         .live-status { display: block; width: fit-content; margin-left: auto; margin-right: auto; } /* own row on every phone width, so Refresh + Light/Auto/Dark always share the row below */
         .refresh-btn { margin-left: 0; } /* starts its row, so no left gap is needed */
         .theme-switch { margin-left: 6px; }
+        /* Refresh + Light/Auto/Dark row as wide as the year/month/Totals column below: min(300 px, header width − 14 px)
+           (300 px at 375, 266 px at 320). −5 px each covers the 6 px gap and the ~4 px space between inline items */
+        header .refresh-btn { width: calc(min(300px, 100% - 14px) * 0.3 - 5px); justify-content: center; }
+        header .theme-switch { width: calc(min(300px, 100% - 14px) * 0.7 - 5px); }
+        header .theme-switch button { flex: 1 1 0; justify-content: center; }
     }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
