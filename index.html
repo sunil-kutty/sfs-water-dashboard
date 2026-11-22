@@ -116,6 +116,13 @@
     .theme-switch button[aria-checked="true"] { background: rgba(255,255,255,0.95); color: #1e3a8a; font-weight: 700; }
     html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @media (pointer: coarse) { /* touch screens: bigger targets for thumbs (were 24–30 px tall); mouse users see no change */
+        .refresh-btn { min-height: 36px; padding: 6px 14px; border-radius: 18px; font-size: 0.78rem; }
+        .theme-switch { border-radius: 18px; }
+        .theme-switch button { min-height: 36px; padding: 6px 12px; font-size: 0.78rem; }
+        .year-tabs .year-btn { min-height: 40px; padding: 8px 18px; } /* .year-tabs prefix: the base .year-btn rule comes later in the file */
+        .scope-row #monthSelect { min-height: 40px; }
+    }
     @media (max-width: 480px) { /* phones only: tighter spacing so the page starts higher; text sizes unchanged */
         header { padding: 18px 20px 14px; }
         header p { margin-top: 4px; }
@@ -142,6 +149,8 @@
         box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .stat-card .num { font-size: 1.25rem; font-weight: 700; color: #2563eb; }
+    .stat-card.total { grid-column: 1 / -1; } /* full-width "Total Water In" card above the others */
+    .stat-card.total .num { font-size: 1.45rem; }
     .stats[data-state] .stat-card .num { color: #6b7280; } /* "…" while loading, "—" if loading failed: grey, never a real-looking 0 */
     .stats[data-state] .tap-hint { visibility: hidden; } /* nothing to tap until data has loaded */
     td.state-cell { text-align: center; color: #6b7280; padding: 24px 12px; white-space: normal; }
@@ -385,7 +394,7 @@
 
     #noResults {
         text-align: center;
-        color: #9ca3af;
+        color: #6b7280; /* was #9ca3af (2.54:1 on white); now 4.83:1 */
         padding: 40px 20px;
         font-size: 0.9rem;
         display: none;
@@ -418,7 +427,7 @@
     .badge.pending { background: #fef3c7; color: #92400e; cursor: help; }
     .tankers-missing { color: #92400e; font-weight: 600; }
     .partial-badge { display:inline-block; margin-top:4px; font-size:0.65rem; background:#fef3c7; color:#92400e; padding:2px 7px; border-radius:7px; }
-    .no-data-note { font-size: 0.78rem; color: #9ca3af; font-style: italic; padding: 20px 0; text-align: center; }
+    .no-data-note { font-size: 0.78rem; color: #6b7280; font-style: italic; padding: 20px 0; text-align: center; }
 
     .chart-title { font-size: 1.05rem; font-weight: 700; color: #111827; }
     .chart-sub { font-size: 0.78rem; color: #6b7280; margin-top: 2px; margin-bottom: 14px; }
@@ -529,7 +538,11 @@
         line-height: 1.5;
     }
     .insight-box strong { color: #1e3a8a; }
-    .chart-footer-note { font-size: 0.68rem; color: #9ca3af; margin-top: 8px; }
+    .insight-list { list-style: none; margin: 4px 0 0; padding: 0; } /* one fact per line: easier to scan on phones */
+    .insight-list li { padding: 1px 0; }
+    .insight-list .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+    .insight-note { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
+    .chart-footer-note { font-size: 0.68rem; color: #6b7280; margin-top: 8px; } /* 4.83:1 on the white card (was 2.54:1) */
 
     .note-box {
         margin: 16px auto 0;
@@ -610,7 +623,7 @@
     footer {
         text-align: center;
         font-size: 0.72rem;
-        color: #9ca3af;
+        color: #4b5563; /* 6.86:1 on the page background (was #9ca3af, 2.3:1) */
         margin-top: 30px;
         padding: 0 20px;
     }
@@ -620,7 +633,7 @@
         margin-bottom: 4px;
         font-size: 0.78rem;
         font-weight: 600;
-        color: #4b5563;
+        color: #374151; /* a step darker than the footer text below it */
     }
 
     @media (max-width: 480px) {
@@ -632,7 +645,7 @@
     /* ---------- Colours shared by CSS and the charts (light = same values as before) ---------- */
     :root {
         --c-tanker: #9333ea; --c-kwa: #1d4ed8; --c-rain: #059669; /* middle green: brighter, separates from purple/blue; badge text keeps #047857 */
-        --c-ring: #e5e7eb; --c-grid: #e5e7eb; --c-axis: #9ca3af; --c-axis-text: #9ca3af;
+        --c-ring: #e5e7eb; --c-grid: #e5e7eb; --c-axis: #9ca3af; --c-axis-text: #6b7280; /* chart axis numbers: 4.83:1 (was 2.54:1) */
         --c-bar-label: #374151; --c-day: #6b7280; --c-dash: #d1d5db;
         --c-seg-gap: none; /* light: bars unchanged */
     }
@@ -729,6 +742,7 @@
     <div class="period-row"><div class="period-label" id="periodLabel" role="status" aria-live="polite">Loading data…</div></div>
 
     <div class="stats" id="statsBox" data-state="loading">
+        <div class="stat-card total"><div class="num" id="statTotal">…</div><div class="label">Total Water In (L) · Tanker + KWA + Rainwater</div></div>
         <div class="stat-card"><div class="num" id="statDays">…</div><div class="label">Days Logged</div></div>
         <div class="stat-card"><div class="num" id="statTanker">…</div><div class="label">Tanker Loads (Total)</div></div>
         <div class="stat-card"><div class="num" id="statRain">…</div><div class="label">Rainwater (L)</div></div>
@@ -1013,6 +1027,7 @@ function renderStats(records) {
         if (!r.kwaFlag && r.kwaTotalL != null) kwaL += r.kwaTotalL;
         if (isFlagged(r)) anomalyCount++;
     });
+    document.getElementById('statTotal').textContent = fmt(tankerLoads * TANKER_LOAD_L + kwaL + rainL); // same total as the Supply mix and the Chart summary
     document.getElementById('statDays').textContent = days;
     document.getElementById('statTanker').textContent = fmt(tankerLoads);
     document.getElementById('statRain').textContent = fmt(rainL);
@@ -1423,12 +1438,14 @@ function renderMonthInsight(y, m, agg, days) {
 
     return `
         <div class="insight-box">
-            ★ <strong>${monthLabel(y, m)}:</strong> ${fmt(total)} L total across ${agg.daysLogged}/${agg.daysInMonth} logged days
+            ★ <strong>${monthLabel(y, m)} · ${fmt(total)} L</strong> in ${agg.daysLogged}/${agg.daysInMonth} logged days
             ${agg.isPartial ? '<span class="partial-badge">Partial month</span>' : ''}
-            — Tanker ${pct(agg.nominalTankerL).toFixed(0)}% (${fmt(agg.nominalTankerL)} L, ${agg.tankerLoads} loads),
-            KWA ${pct(agg.kwaL).toFixed(0)}% (${fmt(agg.kwaL)} L),
-            Rainwater ${pct(agg.rainL).toFixed(0)}% (${fmt(agg.rainL)} L).
-            ${peak && peak.total > 0 ? ` Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} (${fmt(peak.total)} L).` : ''}
+            <ul class="insight-list">
+                <li><span class="sw tanker"></span>Tanker ${pct(agg.nominalTankerL).toFixed(0)}% · ${fmt(agg.nominalTankerL)} L (${agg.tankerLoads} loads)</li>
+                <li><span class="sw kwa"></span>KWA ${pct(agg.kwaL).toFixed(0)}% · ${fmt(agg.kwaL)} L</li>
+                <li><span class="sw rain"></span>Rainwater ${pct(agg.rainL).toFixed(0)}% · ${fmt(agg.rainL)} L</li>
+                ${peak && peak.total > 0 ? `<li>▲ Heaviest supply day: ${monthLabel(y, m).split(' ')[0]} ${peak.day} · ${fmt(peak.total)} L</li>` : ''}
+            </ul>
         </div>
         ${excludedNotes.length ? `<div class="chart-footer-note">${excludedNotes.join(' · ')} — those days are otherwise counted; see Daily Log tab.</div>` : ''}
         <div class="chart-footer-note">Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
@@ -1590,11 +1607,14 @@ function renderPeriodInsight(title, series) {
     const lo = pool.reduce((a, s) => s.total < a.total ? s : a);
     return `
         <div class="insight-box">
-            ★ <strong>${title}:</strong> ${fmt(total)} L total across ${t.days} logged days
-            — Tanker ${pct(t.tankerL)}% (${fmt(t.tankerL)} L, ${t.loads} loads),
-            KWA ${pct(t.kwaL)}% (${fmt(t.kwaL)} L),
-            Rainwater ${pct(t.rainL)}% (${fmt(t.rainL)} L).
-            ${pool.length > 1 ? ` Highest month: ${monthLabel(hi.y, hi.m)} (${fmt(hi.total)} L). Lowest: ${monthLabel(lo.y, lo.m)} (${fmt(lo.total)} L)${full.length ? ' — fully logged months only' : ''}.` : ''}
+            ★ <strong>${title} · ${fmt(total)} L</strong> in ${t.days} logged days
+            <ul class="insight-list">
+                <li><span class="sw tanker"></span>Tanker ${pct(t.tankerL)}% · ${fmt(t.tankerL)} L (${t.loads} loads)</li>
+                <li><span class="sw kwa"></span>KWA ${pct(t.kwaL)}% · ${fmt(t.kwaL)} L</li>
+                <li><span class="sw rain"></span>Rainwater ${pct(t.rainL)}% · ${fmt(t.rainL)} L</li>
+                ${pool.length > 1 ? `<li>▲ Highest month: ${monthLabel(hi.y, hi.m)} · ${fmt(hi.total)} L</li><li>▼ Lowest month: ${monthLabel(lo.y, lo.m)} · ${fmt(lo.total)} L</li>` : ''}
+            </ul>
+            ${pool.length > 1 && full.length ? '<div class="insight-note">Highest and lowest count fully logged months only.</div>' : ''}
         </div>
         <div class="chart-footer-note">Same totals as the cards above · Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
 }
@@ -1681,7 +1701,7 @@ function showPlaceholders(state) {
     const mark = state === 'loading' ? '…' : '—';
     const msg = state === 'loading' ? 'Loading data…' : 'Could not load data — press Refresh to try again.';
     document.getElementById('statsBox').setAttribute('data-state', state);
-    ['statDays', 'statTanker', 'statRain', 'statKwa', 'statAnomaly'].forEach(id => { document.getElementById(id).textContent = mark; });
+    ['statTotal', 'statDays', 'statTanker', 'statRain', 'statKwa', 'statAnomaly'].forEach(id => { document.getElementById(id).textContent = mark; });
     document.getElementById('mixDonut').innerHTML = '<circle cx="21" cy="21" r="15.9155" fill="none" style="stroke:var(--c-ring)" stroke-width="7"/>';
     document.getElementById('mixLegend').innerHTML = `<div class="mix-title">Supply mix</div><div>${state === 'loading' ? 'Loading…' : 'No data'}</div>`;
     const pl = document.getElementById('periodLabel'); pl.classList.remove('filtered'); pl.textContent = state === 'loading' ? 'Loading data…' : 'No data loaded';
