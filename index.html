@@ -117,9 +117,9 @@
     html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @media (pointer: coarse) { /* touch screens: bigger targets for thumbs (were 24–30 px tall); mouse users see no change */
-        .refresh-btn { min-height: 36px; padding: 6px 14px; border-radius: 18px; font-size: 0.78rem; }
+        .refresh-btn { min-height: 36px; padding: 6px 10px; border-radius: 18px; font-size: 0.78rem; } /* side padding 10 (was 14): narrower, same height */
         .theme-switch { border-radius: 18px; }
-        .theme-switch button { min-height: 36px; padding: 6px 12px; font-size: 0.78rem; }
+        .theme-switch button { min-height: 36px; padding: 6px 8px; gap: 3px; font-size: 0.78rem; } /* side padding 8 (was 12) */
         .year-tabs .year-btn { min-height: 40px; padding: 8px 18px; } /* .year-tabs prefix: the base .year-btn rule comes later in the file */
         .scope-row #monthSelect { min-height: 40px; }
     }
@@ -130,6 +130,9 @@
         header h1 .h1-text { position: relative; display: inline-block; }
         header h1 .beta-badge { position: absolute; right: -6px; top: -12px; margin: 0; font-size: 0.55rem; padding: 0 6px; line-height: 1.5; vertical-align: baseline; }
         .live-status, .refresh-btn, .theme-switch { margin-top: 8px; }
+        .live-status { display: block; width: fit-content; margin-left: auto; margin-right: auto; } /* own row on every phone width, so Refresh + Light/Auto/Dark always share the row below */
+        .refresh-btn { margin-left: 0; } /* starts its row, so no left gap is needed */
+        .theme-switch { margin-left: 6px; }
     }
 
     .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
@@ -641,7 +644,13 @@
         .controls { flex-direction: column; align-items: stretch; }
         #searchBox { min-width: 0; }
         select, label.chk { width: 100%; }
-        .scope-row #monthSelect { width: auto; }
+        /* "Showing data for" section on phones: one column as wide as the cards, tighter gaps */
+        .scope-row { row-gap: 6px; } /* was 10 px */
+        .year-tabs { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; } /* year buttons fill one row edge to edge; wraps neatly if more years are added */
+        .scope-row .year-tabs .year-btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; } /* each takes the width its label needs, so "2025–2026 combined" fits even at 320 px */
+        .scope-row #monthSelect { width: 100%; text-align-last: center; }
+        .period-row { margin-top: 8px; padding: 0; } /* was 14 px gap and 4 px side inset */
+        .period-label { width: 100%; }
     }
     /* ---------- Colours shared by CSS and the charts (light = same values as before) ---------- */
     :root {
@@ -1732,7 +1741,7 @@ function refreshLiveData() {
             // Time the data was actually read from the sheet (sent by the web app), not when this
             // browser received it — the web app may serve a copy up to 5 minutes old from its cache.
             const readAt = resp && resp.fetchedAt ? new Date(resp.fetchedAt) : null;
-            const stamp = (readAt && !isNaN(readAt) ? readAt : new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+            const stamp = (readAt && !isNaN(readAt) ? readAt : new Date()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) // no seconds: fits on one line on small phones
                 .replace(/\b(am|pm)\b/i, m => m.toUpperCase());
             setLiveStatus(`💧 Live data as of ${stamp} IST`, 'live');
         })
