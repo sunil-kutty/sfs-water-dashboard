@@ -1661,7 +1661,9 @@ function renderCaveatCounts() {
 
 function refreshUI() {
     renderCaveatCounts();
+    const keepMonth = document.getElementById('monthSelect').value; // Refresh keeps the picked month (year, search and checkbox are already kept)
     populateMonthSelect();
+    if (keepMonth) document.getElementById('monthSelect').value = keepMonth;
     populateYearTabs();
     applyFilters(); // also redraws the chart for the same period
 }
