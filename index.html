@@ -654,13 +654,14 @@
         .year-tabs { display: flex; flex-wrap: wrap; gap: 6px; } /* year buttons fill one row; wraps neatly if more years are added */
         .scope-row .year-tabs .year-btn { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; white-space: nowrap; } /* each takes the width its label needs, so "2025–2026 combined" fits even at 320 px */
         .scope-row #monthSelect { padding-left: 30px; padding-right: 30px; text-align: center; text-align-last: center; } /* equal padding both sides, so "All Months" sits exactly in the middle */
-        .scope-row .scope-label { font-size: 0.85rem; color: #374151; } /* same as the "Totals for" heading: the two section headings match */
-        html.dark .scope-row .scope-label { color: #cbd5e1; }
+        .scope-row .scope-label { font-size: 0.95rem; color: #1f2937; } /* section heading of the choices: same size as the "Totals for" heading, a step above the card labels */
+        html.dark .scope-row .scope-label { color: #e2e8f0; }
         .year-tabs, .scope-row #monthSelect, .period-label { width: min(100%, 300px); margin-left: auto; margin-right: auto; }
         /* Totals line: plain heading of the cards below; turns into the blue box with ✕ Clear when a filter is on */
         .period-row { margin-top: 14px; padding: 0; }
         .period-label { width: min(calc(100% - 22px), 300px); min-height: 40px; border-color: #d1d5db; border-radius: 20px; } /* 22 px = panel padding + border, so it matches the rows inside the panel on small phones too */
-        .period-row .period-label:not(.filtered) { background: none; border-color: transparent; min-height: 0; padding-top: 2px; padding-bottom: 2px; font-weight: 600; }
+        .period-row .period-label:not(.filtered) { background: none; border-color: transparent; min-height: 0; padding-top: 2px; padding-bottom: 2px; font-weight: 600; font-size: 0.95rem; color: #1e3a8a; } /* section heading of the results, in the header's navy so it reads with the blue card numbers */
+        html.dark .period-row .period-label:not(.filtered) { color: #93c5fd; }
         /* Cards closer together (width unchanged) */
         .stats { margin-top: 6px; gap: 10px; } /* was 20 px above, 14 px between */
         .stat-card { padding-top: 8px; padding-bottom: 8px; } /* was 10 px */
