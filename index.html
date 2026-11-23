@@ -116,6 +116,13 @@
     .theme-switch button[aria-checked="true"] { background: rgba(255,255,255,0.95); color: #1e3a8a; font-weight: 700; }
     html.dark .theme-switch button[aria-checked="true"] { background: #bfdbfe; color: #172554; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @media (min-width: 768px) { /* laptops and tablets: header text a step bigger (phones keep their sizes) */
+        header h1 { font-size: 2rem; }                              /* 32 px (was 25.6, barely above the 23 px card numbers) */
+        header p.tagline { font-size: 1.15rem; margin-top: 8px; }   /* 18.4 px (was 15.2) */
+        header p.sources { font-size: 0.95rem; margin-top: 4px; }   /* 15.2 px (was 12.8) */
+        .live-status { font-size: 0.85rem; }                        /* 13.6 px, same as Refresh and Light/Auto/Dark beside it (was 11.5) */
+        .beta-badge { font-size: 0.7rem; }
+    }
     @media (pointer: coarse) { /* touch screens: bigger targets for thumbs (were 24–30 px tall); mouse users see no change */
         .refresh-btn { min-height: 36px; padding: 6px 7px; gap: 4px; border-radius: 18px; font-size: 0.85rem; } /* side padding 7: narrower, same height */
         .theme-switch { border-radius: 18px; }
