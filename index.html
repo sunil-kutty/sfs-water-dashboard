@@ -256,27 +256,7 @@
     }
     .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
     .tabs .tab-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 1 150px; min-height: 40px; } /* both tabs the same size; calendar icon and words on one line */
-    .cal-icon {
-        display: inline-flex;
-        flex-direction: column;
-        width: 15px;
-        height: 15px;
-        border-radius: 3px;
-        overflow: hidden;
-        border: 1.3px solid currentColor;
-        vertical-align: 0;
-        margin-right: 0; /* spacing comes from the tab's gap */
-    }
-    .cal-icon-top { height: 4px; background: currentColor; }
-    .cal-icon-num {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 8.5px;
-        font-weight: 800;
-        line-height: 1;
-    }
+    .tab-icon { width: 20px; height: 20px; flex: 0 0 auto; display: block; } /* Daily Log calendar and Chart bars: small white tiles, so they look the same on the white and the blue (selected) tab, light and dark */
 
     .panel { display: none; }
     .panel.active { display: block; }
@@ -789,8 +769,8 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" data-tab="log"><span class="cal-icon"><span class="cal-icon-top"></span><span class="cal-icon-num" id="calIconNum"></span></span> Daily Log</button>
-        <button class="tab-btn" data-tab="compare">📊 Chart</button>
+        <button class="tab-btn active" data-tab="log"><!-- calendar with one day picked: "day by day" --><svg class="tab-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="0.75" y="1.75" width="18.5" height="17.5" rx="4" fill="#fff" stroke="#1e3a8a" stroke-width="1.5"/><path d="M0.75 5.75a4 4 0 0 1 4-4h10.5a4 4 0 0 1 4 4v1.75H0.75z" fill="#1e3a8a"/><rect x="5" y="0" width="2" height="4" rx="1" fill="#1e3a8a"/><rect x="13" y="0" width="2" height="4" rx="1" fill="#1e3a8a"/><rect x="4" y="10" width="2.8" height="2.8" rx="0.6" fill="#94a3b8"/><rect x="8.6" y="10" width="2.8" height="2.8" rx="0.6" fill="#94a3b8"/><rect x="13.2" y="10" width="2.8" height="2.8" rx="0.6" fill="#94a3b8"/><rect x="4" y="14" width="2.8" height="2.8" rx="0.6" fill="#94a3b8"/><rect x="8.6" y="14" width="2.8" height="2.8" rx="0.6" fill="#2563eb"/><rect x="13.2" y="14" width="2.8" height="2.8" rx="0.6" fill="#94a3b8"/></svg> Daily Log</button>
+        <button class="tab-btn" data-tab="compare"><!-- tiny stacked bars in the dashboard colours: Tanker purple, KWA blue, Rainwater green --><svg class="tab-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="0.75" y="0.75" width="18.5" height="18.5" rx="4" fill="#fff" stroke="#cbd5e1" stroke-width="1.5"/><rect x="4" y="11.5" width="3.2" height="4.5" fill="#9333ea"/><rect x="4" y="9" width="3.2" height="2.5" fill="#1d4ed8"/><rect x="4" y="7.3" width="3.2" height="1.7" fill="#059669"/><rect x="8.4" y="8.5" width="3.2" height="7.5" fill="#9333ea"/><rect x="8.4" y="6" width="3.2" height="2.5" fill="#1d4ed8"/><rect x="8.4" y="4.3" width="3.2" height="1.7" fill="#059669"/><rect x="12.8" y="10.5" width="3.2" height="5.5" fill="#9333ea"/><rect x="12.8" y="7.6" width="3.2" height="2.9" fill="#1d4ed8"/><rect x="12.8" y="5.9" width="3.2" height="1.7" fill="#059669"/></svg> Chart</button>
     </div>
 
     <!-- Flagged-entries popup: kept outside both tab panels so the Flagged Entries card opens it from either tab -->
@@ -1912,7 +1892,6 @@ document.getElementById('flagModalOverlay').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeFlagModal();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeFlagModal(); });
-document.getElementById('calIconNum').textContent = new Date().getDate();
 
 populateMonthSelect();
 refreshLiveData();
