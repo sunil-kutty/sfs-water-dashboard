@@ -1313,10 +1313,10 @@ function renderPeriodLabel() {
     const chk = document.getElementById('anomalyOnly');
     const month = sel.value, q = sb.value.trim(), flaggedOnly = chk.checked;
     const range = yearRangeLabel();
-    const yearTxt = currentYear === 'ALL' ? (range.includes('–') ? `${range} combined` : 'All loaded years') : currentYear;
+    const yearTxt = currentYear === 'ALL' ? (range.includes('–') ? `${range} Combined` : 'All loaded years') : currentYear;
     const esc = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     let main;
-    if (month === 'ALL') main = `<b>${yearTxt}</b> · All months`;
+    if (month === 'ALL') main = `<b>${yearTxt}</b> · All Months`; // same capitals as the month box
     else main = currentYear === 'ALL' ? `<b>${FULL[+month - 1]}</b> (${yearTxt})` : `<b>${FULL[+month - 1]} ${yearTxt}</b>`;
     const extras = [];
     if (flaggedOnly) extras.push('Flagged entries only');
@@ -1497,7 +1497,7 @@ function renderMonthChart() {
             return `<button type="button" class="chart-step" data-ym="${ty}-${String(tm).padStart(2, '0')}"${has ? '' : ' disabled'} aria-label="${has ? 'Show ' : 'No data for '}${monthLabel(ty, tm)}">${dir < 0 ? '‹ ' + name : name + ' ›'}</button>`;
         };
         const back = `<div class="chart-nav">${m === 1 ? stepBtn(y - 1, 12, -1) : stepBtn(y, m - 1, -1)}`
-            + `<button type="button" class="chart-back">↑ All months of ${y}</button>`
+            + `<button type="button" class="chart-back">↑ All Months of ${y}</button>`
             + `${m === 12 ? stepBtn(y + 1, 1, 1) : stepBtn(y, m + 1, 1)}</div>`;
         if (!agg) { card.innerHTML = filterNote + back + `<div class="no-data-note">No days logged in ${monthLabel(y, m)} yet.</div>`; return; }
         const days = buildDailySeries(y, m);
