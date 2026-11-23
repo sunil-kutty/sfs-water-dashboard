@@ -1622,6 +1622,8 @@ function buildPeriodChartSvg(series, showYear) {
 }
 
 function renderPeriodInsight(title, series) {
+    // With a search or "Flagged entries only" on, the cards show fewer days than this chart, so don't claim they match
+    const sameAsCards = !document.getElementById('searchBox').value.trim() && !document.getElementById('anomalyOnly').checked;
     const logged = series.filter(s => s.logged);
     if (!logged.length) return '';
     const t = logged.reduce((a, s) => ({ tankerL: a.tankerL + s.tankerL, kwaL: a.kwaL + s.kwaL, rainL: a.rainL + s.rainL, loads: a.loads + s.tankerLoads, days: a.days + s.daysLogged }), { tankerL: 0, kwaL: 0, rainL: 0, loads: 0, days: 0 });
@@ -1642,7 +1644,7 @@ function renderPeriodInsight(title, series) {
             </ul>
             ${pool.length > 1 && full.length ? '<div class="insight-note">Highest and lowest count fully logged months only.</div>' : ''}
         </div>
-        <div class="chart-footer-note">Same totals as the cards above · Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
+        <div class="chart-footer-note">${sameAsCards ? 'Same totals as the cards above · ' : ''}Tanker = loads × 12,000 L · Same data as the Daily Log tab.</div>`;
 }
 
 // ---------- Tabs ----------
